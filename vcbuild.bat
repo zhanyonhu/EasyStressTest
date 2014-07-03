@@ -79,10 +79,19 @@ goto select-target
 echo Warning: Visual Studio not found
 
 :select-target
-if not "%config%"=="" goto project-gen
-if "%run%"=="run-tests.exe" set config=Debug& goto project-gen
-if "%run%"=="run-benchmarks.exe" set config=Release& goto project-gen
+if not "%config%"=="" goto project-tools-download
+if "%run%"=="run-tests.exe" set config=Debug& goto project-tools-download
+if "%run%"=="run-benchmarks.exe" set config=Release& goto project-tools-download
 set config=Debug
+
+:project-tools-download
+if exist third\tcc goto project-gen
+echo download tinyCC tools.
+wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip
+cd third
+7z.exe x tcc.zip
+del tcc.zip
+cd %~dp0
 
 :project-gen
 @rem Skip project generation if requested.
@@ -147,3 +156,4 @@ echo   vcbuild.bat release bench: builds release build and runs benchmarks
 goto exit
 
 :exit
+
