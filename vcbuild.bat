@@ -102,7 +102,7 @@ exit /b 1
 
 :have_libuv
 cd %~dp0third/libuv
-@rem call "%~dp0third\libuv\vcbuild.bat" %*
+call "%~dp0third\libuv\vcbuild.bat" %*
 cd %~dp0
 
 if not defined PYTHON set PYTHON=python
