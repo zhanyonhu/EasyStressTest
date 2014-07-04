@@ -13,11 +13,19 @@ How To Build It ?
 		Also, you should download 7z/wget, and add the path to environment variable "PATH".
 		
 	(b) Build
-	Run the "vcbuild.bat" file to build it. 
+		Run the "vcbuild.bat" file to build it. 
 	
-	Otherwise, you can also download or copy the libuv/tcc to the folder "third\libuv" / "third\tcc". Then, run the "vcbuild.bat". --This will save a lot of time for you.
+		Otherwise, you can also download or copy the libuv/tcc to the folder "third\libuv" / "third\tcc". Then, run the "vcbuild.bat". --This will save a lot of time for you.
 	
-	
+2. Linux	
+	(a) Prepare
+		Please ensure that you have installed Git/Python.
+		Also, you should install 7z.
+		
+	(b) Build
+		Run the "autogen.sh" to build it. Such AS: 
+		$ sh autogen.sh
+		
 	
 
 	
