@@ -39,7 +39,7 @@
 	  ],
 	  
       'sources': [
-        'src/Main.cpp',
+        'src/Main.c',
         'src/StressTest.h'
       ],
 	  
