@@ -42,15 +42,21 @@
         'src/StressTest.h'
       ],
 	  
+  'link_settings': {
+	'libraries': [
+	  '-llibuv'
+	],
+	},
+
 	'configurations': {
 		'Debug': {
 			  'library_dirs': [
-				'third\libuv\Debug\lib',
+				'../third/libuv/out/Debug',
 			  ],
 		},
 		'Release': {
 			  'library_dirs': [
-				'third\libuv\Release\lib',
+				'../third/libuv/out/Release',
 			  ],
 		}
 	},
@@ -65,6 +71,9 @@
 			  
 			  'msvs_settings': {
 				'VCLinkerTool': {
+				  'AdditionalLibraryDirectories': [
+					'third\libuv\$(Configuration)\lib',
+				  ],
 				  'GenerateDebugInformation': 'true',
 				  'SubSystem': 1,
 				},
@@ -76,8 +85,7 @@
 				  '-liphlpapi',
 				  '-lpsapi',
 				  '-lshell32',
-				  '-lws2_32',
-				  '-llibuv'
+				  '-lws2_32'
 				],
 			  },
         }, { # Not Windows i.e. POSIX
