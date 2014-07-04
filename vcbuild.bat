@@ -147,6 +147,26 @@ goto exit
 echo Failed to create vc project files.
 exit /b 1
 
+:arg-update
+@rem update source by git.
+echo 'git pull easystresstest'
+git pull origin master
+if exist third/libuv 
+(
+	cd third/libuv 
+	echo 'git pull libuv'
+	git pull origin master
+	if exist build/gyp
+	(
+		cd build/gyp
+		echo 'git pull gyp'
+		git pull origin master
+		cd ../../
+	)
+	cd ../../
+)
+goto exit
+
 :help
 echo vcbuild.bat [debug/release] [test/bench] [clean] [noprojgen] [nobuild] [x86/x64] [static/shared]
 echo Examples:
