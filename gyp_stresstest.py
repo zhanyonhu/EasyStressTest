@@ -11,7 +11,7 @@ script_dir = os.path.dirname(__file__)
 stresstest_root = os.path.normpath(script_dir)
 output_dir = os.path.join(os.path.abspath(stresstest_root), 'output')
 
-sys.path.insert(0, os.path.join(stresstest_root, 'third\libuv', 'build\gyp', 'pylib'))
+sys.path.insert(0, os.path.join(stresstest_root, 'third', 'libuv', 'build', 'gyp', 'pylib'))
 
 try:
   import gyp
