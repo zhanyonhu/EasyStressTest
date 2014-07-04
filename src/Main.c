@@ -39,6 +39,8 @@ int main(int argc, char **argv)
 
 }
 
+#ifdef WIN32
+
 /* Do platform-specific initialization. */
 void platform_init(int argc, char **argv) {
 
@@ -58,4 +60,22 @@ void platform_init(int argc, char **argv) {
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
 }
+
+#else // WIN32
+
+/* Do platform-specific initialization. */
+void platform_init(int argc, char **argv) {
+	const char* tap;
+
+	tap = getenv("UV_TAP_OUTPUT");
+	tap_output = (tap != NULL && atoi(tap) > 0);
+
+	/* Disable stdio output buffering. */
+	setvbuf(stdout, NULL, _IONBF, 0);
+	setvbuf(stderr, NULL, _IONBF, 0);
+	strncpy(executable_path, argv[0], sizeof(executable_path)-1);
+	signal(SIGPIPE, SIG_IGN);
+}
+
+#endif // WIN32
 
