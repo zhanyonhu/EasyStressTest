@@ -19,24 +19,42 @@
  * IN THE SOFTWARE.
  */
 
+#include <stdio.h>
+
+#ifdef WIN32
 #include <fcntl.h>
 #include <io.h>
 #include <malloc.h>
-#include <stdio.h>
 #include <process.h>
 #if !defined(__MINGW32__)
 # include <crtdbg.h>
 #endif
+#else /*WIN32*/
+#include <stdint.h> /* uintptr_t */
+
+#include <errno.h>
+#include <unistd.h> /* usleep */
+#include <string.h> /* strdup */
+#include <stdlib.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <assert.h>
+
+#include <sys/select.h>
+#include <pthread.h>
+#endif /*WIN32*/
 
 #include "StressTest.h"
 #include "uv.h"
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
 	platform_init(argc, argv);
 
 	argv = uv_setup_args(argc, argv);
-
+	return 0;
 }
 
 #ifdef WIN32
@@ -61,21 +79,15 @@ void platform_init(int argc, char **argv) {
 	setvbuf(stderr, NULL, _IONBF, 0);
 }
 
-#else // WIN32
+#else /*WIN32*/
 
 /* Do platform-specific initialization. */
 void platform_init(int argc, char **argv) {
-	const char* tap;
-
-	tap = getenv("UV_TAP_OUTPUT");
-	tap_output = (tap != NULL && atoi(tap) > 0);
-
 	/* Disable stdio output buffering. */
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
-	strncpy(executable_path, argv[0], sizeof(executable_path)-1);
 	signal(SIGPIPE, SIG_IGN);
 }
 
-#endif // WIN32
+#endif /*WIN32*/
 

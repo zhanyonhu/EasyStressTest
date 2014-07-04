@@ -37,12 +37,24 @@
 		'src/',
 		'third/libuv/include',
 	  ],
-	  
       'sources': [
         'src/Main.c',
         'src/StressTest.h'
       ],
 	  
+	'configurations': {
+		'Debug': {
+			  'library_dirs': [
+				'third\libuv\Debug\lib',
+			  ],
+		},
+		'Release': {
+			  'library_dirs': [
+				'third\libuv\Release\lib',
+			  ],
+		}
+	},
+
       'conditions': [
         [ 'OS=="win"', 
 			{
@@ -53,9 +65,6 @@
 			  
 			  'msvs_settings': {
 				'VCLinkerTool': {
-				  'AdditionalLibraryDirectories': [
-					'third\libuv\$(Configuration)\lib',
-				  ],
 				  'GenerateDebugInformation': 'true',
 				  'SubSystem': 1,
 				},
