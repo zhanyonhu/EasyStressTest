@@ -36,6 +36,7 @@ if /i "%1"=="ia32"         set target_arch=ia32&set platform=WIN32&set vs_toolse
 if /i "%1"=="x64"          set target_arch=x64&set platform=x64&set vs_toolset=x64&goto arg-ok
 if /i "%1"=="shared"       set library=shared_library&goto arg-ok
 if /i "%1"=="static"       set library=static_library&goto arg-ok
+if /i "%1"=="update"       goto arg-update
 :arg-ok
 shift
 goto next-arg
