@@ -21,17 +21,17 @@ if [ "$1" = "update" ]; then
 	echo "execute update command"
 fi
 
-if [ arg_update ]; then
+if [ arg_update = 1 ]; then
 	echo 'git pull origin master(easystresstest)'
 	git pull origin master
 fi
 
 #Build libuv
-if [ arg_update ] || [ ! -f "third/libuv/gyp_uv.py" ]; then
+if [ arg_update = 1 ] || [ ! -f "third/libuv/gyp_uv.py" ]; then
 	 if [ ! -f "third/libuv/gyp_uv.py" ]; then
 		echo 'git clone https://github.com/joyent/libuv.git third/libuv'
 		git clone https://github.com/joyent/libuv.git third/libuv
-	elif [ arg_update ]; then
+	elif [ arg_update = 1 ]; then
 		echo 'git pull origin master(libuv)'
 		cd third/libuv
 		git pull origin master
@@ -44,18 +44,20 @@ if [ arg_update ] || [ ! -f "third/libuv/gyp_uv.py" ]; then
 	if [ ! -d "build/gyp" ]; then
 		echo 'git clone https://git.chromium.org/external/gyp.git build/gyp'
 		git clone https://git.chromium.org/external/gyp.git build/gyp
-	elif [ arg_update ]; then
+	elif [ arg_update = 1 ]; then
 		echo 'git pull origin master(gyp)'
 		cd build/gyp
 		git pull origin master
 		cd ../../
 	fi
 
+	chmod 777 ./gyp_uv.py
 	./gyp_uv.py -f make
 	make -C out
 	cd ../../
 fi
 
+chmod 777 ./gyp_stresstest.py
 ./gyp_stresstest.py -f make
 make -C output
 
