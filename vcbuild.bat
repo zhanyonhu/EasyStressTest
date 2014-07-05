@@ -21,6 +21,7 @@ set target_arch=ia32
 set vs_toolset=x86
 set platform=WIN32
 set library=executable
+set PATH=%PATH%;%~dp0tools\win32
 
 :next-arg
 if "%1"=="" goto args-done
@@ -80,19 +81,10 @@ goto select-target
 echo Warning: Visual Studio not found
 
 :select-target
-if not "%config%"=="" goto project-tools-download
-if "%run%"=="run-tests.exe" set config=Debug& goto project-tools-download
-if "%run%"=="run-benchmarks.exe" set config=Release& goto project-tools-download
+if not "%config%"=="" goto project-gen
+if "%run%"=="run-tests.exe" set config=Debug& goto project-gen
+if "%run%"=="run-benchmarks.exe" set config=Release& goto project-gen
 set config=Debug
-
-:project-tools-download
-if exist third\tcc goto project-gen
-echo download tinyCC tools.
-wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip
-cd third
-7z.exe x tcc.zip
-del tcc.zip
-cd %~dp0
 
 :project-gen
 @rem Skip project generation if requested.
@@ -111,6 +103,20 @@ echo manually install libuv into %~dp0third/libuv.
 exit /b 1
 
 :have_libuv
+goto project-tools-download
+
+:project-tools-download
+if exist third\tcc goto project-gen
+echo download tinyCC tools.
+if not exist third (mkdir third)
+wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip
+cd third
+7z.exe x tcc.zip
+del tcc.zip
+cd %~dp0
+goto build_libuv
+
+:build_libuv
 cd %~dp0third/libuv
 call "%~dp0third\libuv\vcbuild.bat" %*
 cd %~dp0
