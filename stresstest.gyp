@@ -42,25 +42,6 @@
         'src/StressTest.h'
       ],
 	  
-  'link_settings': {
-	'libraries': [
-	  '-llibuv'
-	],
-	},
-
-	'configurations': {
-		'Debug': {
-			  'library_dirs': [
-				'../third/libuv/out/Debug',
-			  ],
-		},
-		'Release': {
-			  'library_dirs': [
-				'../third/libuv/out/Release',
-			  ],
-		}
-	},
-
       'conditions': [
         [ 'OS=="win"', 
 			{
@@ -85,7 +66,8 @@
 				  '-liphlpapi',
 				  '-lpsapi',
 				  '-lshell32',
-				  '-lws2_32'
+				  '-lws2_32',
+				  '-llibuv'
 				],
 			  },
         }, { # Not Windows i.e. POSIX
@@ -97,8 +79,24 @@
             '-Wextra',
             '-Wno-unused-parameter',
           ],
+		  
+			'configurations': {
+				'Debug': {
+					  'library_dirs': [
+						'third/libuv/out/Debug',
+					  ],
+				},
+				'Release': {
+					  'library_dirs': [
+						'third/libuv/out/Release',
+					  ],
+				}
+			},
+			
           'link_settings': {
-            'libraries': [ '-lm' ],
+            'libraries':[  '-lm',
+							'-luv' 
+						],
             'conditions': [
               ['OS=="solaris"', {
                 'ldflags': [ '-pthreads' ],
