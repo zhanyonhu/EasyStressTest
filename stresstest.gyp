@@ -83,12 +83,12 @@
 			'configurations': {
 				'Debug': {
 					  'library_dirs': [
-						'third/libuv/out/Debug',
+						'../third/libuv/out/Debug',
 					  ],
 				},
 				'Release': {
 					  'library_dirs': [
-						'third/libuv/out/Release',
+						'../third/libuv/out/Release',
 					  ],
 				}
 			},
