@@ -91,7 +91,7 @@ set config=Debug
 if defined noprojgen goto msbuild
 
 @rem Build libuv.
-if exist third\libuv goto have_libuv
+if exist third\libuv\gyp_uv.py goto have_libuv
 echo git clone https://github.com/joyent/libuv.git third/libuv
 git clone https://github.com/joyent/libuv.git third/libuv
 if errorlevel 1 goto libuv_install_failed
@@ -106,7 +106,7 @@ exit /b 1
 goto project-tools-download
 
 :project-tools-download
-if exist third\tcc goto project-gen
+if exist third\tcc goto build_libuv
 echo download tinyCC tools.
 if not exist third (mkdir third)
 wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip
