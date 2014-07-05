@@ -15,23 +15,18 @@
 
 echo 'auto build the stress test project'
 
-declare -i arg_update=0
 if [ "$1" = "update" ]; then
-	arg_update=1
 	echo "execute update command"
-fi
-
-if [ arg_update = 1 ]; then
 	echo 'git pull origin master(easystresstest)'
 	git pull origin master
 fi
 
 #Build libuv
-if [ arg_update = 1 ] || [ ! -f "third/libuv/gyp_uv.py" ]; then
+if [ "$1" = "update" ] || [ ! -f "third/libuv/gyp_uv.py" ]; then
 	 if [ ! -f "third/libuv/gyp_uv.py" ]; then
 		echo 'git clone https://github.com/joyent/libuv.git third/libuv'
 		git clone https://github.com/joyent/libuv.git third/libuv
-	elif [ arg_update = 1 ]; then
+	elif [ "$1" = "update" ]; then
 		echo 'git pull origin master(libuv)'
 		cd third/libuv
 		git pull origin master
@@ -44,7 +39,7 @@ if [ arg_update = 1 ] || [ ! -f "third/libuv/gyp_uv.py" ]; then
 	if [ ! -d "build/gyp" ]; then
 		echo 'git clone https://git.chromium.org/external/gyp.git build/gyp'
 		git clone https://git.chromium.org/external/gyp.git build/gyp
-	elif [ arg_update = 1 ]; then
+	elif [ "$1" = "update" ]; then
 		echo 'git pull origin master(gyp)'
 		cd build/gyp
 		git pull origin master
