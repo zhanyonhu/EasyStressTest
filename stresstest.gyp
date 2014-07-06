@@ -38,10 +38,20 @@
 		'third/libuv/include',
 	  ],
       'sources': [
-        'src/Main.c',
-        'src/StressTest.h'
+        'src/Main.cpp',
+        'src/commondef.h',
+        'src/StressTest.h',
+        'src/task.h',
+        'src/task.cpp',
+        'src/default_task.h',
+        'src/default_task.cpp',
       ],
 	  
+		'defines': [
+		'_UNICODE',
+		'UNICODE',
+		],
+			  
       'conditions': [
         [ 'OS=="win"', 
 			{

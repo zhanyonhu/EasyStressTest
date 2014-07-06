@@ -22,6 +22,47 @@
 #ifndef _STRESS_TEST_H_
 #define _STRESS_TEST_H_
 
+extern "C"
+{
+#include "commondef.h"
+};
+
+#include <set>
+#include <map>
+using namespace std;
+
+
+struct _main_config
+{
+	unsigned int task_count;				//execute times
+	unsigned int task_min_running;			//minimize running at the same time
+	unsigned int task_add_once;				//When the running instance count less than a certain value <task_min_running> , 
+											//automatically increase the number of running instance
+};
+extern struct _main_config main_config;
+
+struct _main_info
+{
+	set<struct tcp_task *> task_list;
+	map<struct tcp_task *, time_t> to_delete_task_list;
+	uv_mutex_t to_delete_task_list_mutex;
+
+public:
+	void AddTask_ToBeDeleted(struct tcp_task * ptask);
+	_main_info()
+	{
+		uv_mutex_init(&to_delete_task_list_mutex);
+	}
+	~_main_info()
+	{
+		uv_mutex_destroy(&to_delete_task_list_mutex);
+	}
+};
+extern struct _main_info main_info;
+
+//show the help menu
+void show_help();
+
 /* Do platform-specific initialization. */
 void platform_init(int argc, char** argv);
 

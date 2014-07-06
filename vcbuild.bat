@@ -82,8 +82,6 @@ echo Warning: Visual Studio not found
 
 :select-target
 if not "%config%"=="" goto project-gen
-if "%run%"=="run-tests.exe" set config=Debug& goto project-gen
-if "%run%"=="run-benchmarks.exe" set config=Release& goto project-gen
 set config=Debug
 
 :project-gen
@@ -117,9 +115,9 @@ cd %~dp0
 goto build_libuv
 
 :build_libuv
-cd %~dp0third/libuv
-call "%~dp0third\libuv\vcbuild.bat" %*
-cd %~dp0
+cd third/libuv
+call vcbuild.bat %*
+cd ../../
 
 if not defined PYTHON set PYTHON=python
 "%PYTHON%" gyp_stresstest.py -Dtarget_arch=%target_arch% -Dstresstest_library=%library%
