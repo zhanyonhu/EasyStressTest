@@ -83,7 +83,6 @@
         }, { # Not Windows i.e. POSIX
           'cflags': [
             '-g',
-            '--std=gnu89',
             '-pedantic',
             '-Wall',
             '-Wextra',
