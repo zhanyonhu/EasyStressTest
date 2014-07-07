@@ -23,9 +23,24 @@
 #include "default_task.h"
 #include <time.h>
 
+#define TIMEOUT_FOR_RELEASE							20			/*seconds*/
+
+#define QUEUE_PREV(q)       (*(QUEUE **) &((*(q))[1]))
+#define QUEUE_EMPTY(q)                                                        \
+	((const QUEUE *) (q) == (const QUEUE *) QUEUE_NEXT(q))
+
+#ifdef WIN32
+HANDLE g_Heap = GetProcessHeap();
+#ifdef DEBUG
+LONGLONG g_MallocCount = 0;
+LONGLONG g_FreeCount = 0;
+#endif // DEBUG
+#endif /*WIN32*/
+
+
 struct _main_config main_config={
 	-1,
-	10000,
+	50000,
 	100
 };
 
@@ -39,7 +54,7 @@ void _main_info::AddTask_ToBeDeleted(struct tcp_task * ptask)
 	uv_mutex_unlock(&to_delete_task_list_mutex);
 }
 
-static void timer_cb(uv_timer_t *handle)
+static void timer_release_cb(uv_timer_t *handle)
 {
 	if (main_info.to_delete_task_list.size()>0)
 	{
@@ -47,12 +62,14 @@ static void timer_cb(uv_timer_t *handle)
 		map<struct tcp_task *, time_t>::iterator piter;
 		int count = main_info.to_delete_task_list.size()/2;
 		int i = 0;
+		time_t t = time(NULL);
 		for (piter = main_info.to_delete_task_list.begin(); piter != main_info.to_delete_task_list.end() && i<count; i++)
 		{
-#define UV__HANDLE_CLOSING					0x01
-			if (piter->first->conn.flags & UV__HANDLE_CLOSING &&
-				piter->first->conn.reqs_pending == 0 &&
-				time(NULL)-piter->second>3000)
+			if ((uv_is_closing((uv_handle_t*)&piter->first->conn))
+				&& piter->first->conn.reqs_pending == 0
+				&& piter->first->conn.activecnt == 0
+				//&& t - piter->second>TIMEOUT_FOR_RELEASE
+				)
 			{
 				free(piter->first);
 				main_info.task_list.erase(piter->first);
@@ -66,8 +83,11 @@ static void timer_cb(uv_timer_t *handle)
 		}
 		uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
 	}
+}
 
-	if (main_info.task_list.size()<main_config.task_min_running)
+static void timer_cb(uv_timer_t *handle)
+{
+	if (main_info.task_list.size() < main_config.task_min_running)
 	{
 		printf("timer>>taskcount=%d, will add=%d\n", main_info.task_list.size(), main_config.task_add_once);
 
@@ -78,13 +98,77 @@ static void timer_cb(uv_timer_t *handle)
 			struct default_task_node * ptask = (struct default_task_node *)malloc(sizeof(struct default_task_node));
 			ASSERT(ptask != NULL);
 			memset(ptask, 0, sizeof(struct default_task_node));
-			r = uv_ip4_addr("123.125.114.144", 80, &ptask->tcp.addr);
+			r = uv_ip4_addr("1.1.1.1", 80, &ptask->tcp.addr);
 			ASSERT(r == 0);
 			r = tcp_task_post(&ptask->tcp);
 			ASSERT(r == 0);
 			main_info.task_list.insert(&ptask->tcp);
 		}
 	}
+}
+
+void signal_unexpected_cb(uv_signal_t* handle, int signum)
+{ 
+	if (SIGINT == signum || 
+		SIGBREAK == signum)
+	{
+		uv_stop(main_info.loop);
+
+		return;
+	}
+}
+
+void init(int argc, char** argv)
+{
+	main_info.loop = uv_default_loop();
+
+	int r = 0;
+	r = uv_signal_init(main_info.loop, &main_info.signal_int);
+	ASSERT(r == 0);
+	r = uv_signal_start(&main_info.signal_int, signal_unexpected_cb, SIGINT);			//Ctrl+C
+	ASSERT(r == 0);
+	r = uv_signal_init(main_info.loop, &main_info.signal_break);
+	ASSERT(r == 0);
+	r = uv_signal_start(&main_info.signal_break, signal_unexpected_cb, SIGBREAK);		//Ctrl+Break
+	ASSERT(r == 0);
+
+	argv = uv_setup_args(argc, argv);
+
+	r = uv_timer_init(main_info.loop, &main_info.timer);
+	ASSERT(r == 0);
+	r = uv_timer_start(&main_info.timer, timer_cb, 0, 100);
+	ASSERT(r == 0);
+
+	r = uv_timer_init(main_info.loop, &main_info.timer_release);
+	ASSERT(r == 0);
+	r = uv_timer_start(&main_info.timer_release, timer_release_cb, 1000, 1000);
+	ASSERT(r == 0);
+}
+
+void uninit()
+{
+	int r = 0;
+
+	close_loop(main_info.loop);
+	r = uv_loop_close(main_info.loop);
+	ASSERT(r == 0);
+	uv_loop_delete(main_info.loop);
+
+	r = uv_signal_stop(&main_info.signal_int);
+	ASSERT(r == 0);
+	r = uv_signal_stop(&main_info.signal_break);
+	ASSERT(r == 0);
+
+	set<struct tcp_task *>::iterator piter;
+	for (piter = main_info.task_list.begin(); piter != main_info.task_list.end(); piter++)
+	{
+		free(*piter);
+	}
+
+	uv_mutex_lock(&main_info.to_delete_task_list_mutex);
+	main_info.to_delete_task_list.clear();
+	main_info.task_list.clear();
+	uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
 }
 
 int main(int argc, char **argv)
@@ -117,7 +201,6 @@ int main(int argc, char **argv)
 			main_config.task_add_once = atol(pargv + strlen("-ac="));
 		}
 
-
 		else if (stricmp(argv[arg_i], "-help") == 0 ||
 			stricmp(argv[arg_i], "/help") == 0 ||
 			stricmp(argv[arg_i], "help") == 0)
@@ -143,22 +226,18 @@ int main(int argc, char **argv)
 	printf("task_add_once=%d\n", main_config.task_add_once);
 
 	platform_init(argc, argv);
-
-	argv = uv_setup_args(argc, argv);
+	init(argc, argv);
 
 	int r = 0;
-	uv_timer_t timer;
-	r = uv_timer_init(uv_default_loop(), &timer);
-	ASSERT(r == 0);
-	r = uv_timer_start(&timer, timer_cb, 0, 10);
-	ASSERT(r == 0);
 
-	r = uv_run(uv_default_loop(), UV_RUN_DEFAULT);
-	MAKE_VALGRIND_HAPPY();
+	r = uv_run(main_info.loop, UV_RUN_DEFAULT);
 
 	printf("\n\nFinished!");
 	printf("\nPress any key to continue ......");
 	getchar();
+
+	uninit();
+	platform_exit();
 
 	return 0;
 }
@@ -166,7 +245,8 @@ int main(int argc, char **argv)
 #ifdef WIN32
 
 /* Do platform-specific initialization. */
-void platform_init(int argc, char **argv) {
+void platform_init(int argc, char **argv) 
+{
 	/* Disable the "application crashed" popup. */
 	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX |
 		SEM_NOOPENFILEERRORBOX);
@@ -182,18 +262,34 @@ void platform_init(int argc, char **argv) {
 	/* Disable stdio output buffering. */
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
+
+	g_Heap = HeapCreate(HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, 0x100000, 0x40000000);
+	ASSERT(g_Heap != NULL);
 }
 
+void platform_exit()
+{
+	HeapDestroy(g_Heap);
+	g_Heap = GetProcessHeap();
+
+#ifdef DEBUG
+	printf("alloc=%lld, free=%lld\n", g_MallocCount, g_FreeCount);
+#endif // DEBUG
+}
 #else /*WIN32*/
 
 /* Do platform-specific initialization. */
-void platform_init(int argc, char **argv) {
+void platform_init(int argc, char **argv) 
+{
 	/* Disable stdio output buffering. */
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
 	signal(SIGPIPE, SIG_IGN);
 }
 
+void platform_exit()
+{
+}
 #endif /*WIN32*/
 
 void show_help()

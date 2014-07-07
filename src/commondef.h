@@ -80,6 +80,14 @@ do {\
 	fflush(stderr);                     \
 } while (0)
 
+//#define _USE_LOGF_TASK_ERR
+#ifdef _USE_LOGF_TASK_ERR
+#define LOGF_TASK_ERR		LOGF
+#else
+#define LOGF_TASK_ERR		__noop
+#endif // _DEBUG
+
+
 #define LOGF(...)                       \
 do {\
 \
@@ -191,5 +199,19 @@ do {\
 		uv_walk(loop, close_walk_cb, NULL);
 		uv_run(loop, UV_RUN_DEFAULT);
 	}
+
+
+#ifdef WIN32
+	extern HANDLE g_Heap;
+#ifdef DEBUG
+	extern LONGLONG g_MallocCount;
+	extern LONGLONG g_FreeCount;
+#endif // DEBUG
+
+	#undef malloc
+	#define malloc(x)	HeapAlloc(g_Heap, 0, x); InterlockedIncrement64(&g_MallocCount);
+	#undef free
+	#define free(x)		HeapFree(g_Heap, 0, x); InterlockedIncrement64(&g_FreeCount);
+#endif /*WIN32*/
 
 #endif /* TASK_H_ */

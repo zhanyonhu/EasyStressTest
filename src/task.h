@@ -12,9 +12,9 @@ struct tcp_task
 	uv_tcp_t conn;
 	uv_connect_t connect_req;
 	uv_work_t work_req;
-	uv_timer_t timer;
 	struct sockaddr_in addr;
 	struct tcp_task_config config;
+	char read_buf[1024];
 };
 
 int tcp_task_post(struct tcp_task * ptask);

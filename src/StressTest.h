@@ -47,6 +47,13 @@ struct _main_info
 	map<struct tcp_task *, time_t> to_delete_task_list;
 	uv_mutex_t to_delete_task_list_mutex;
 
+	uv_signal_t signal_int;				
+	uv_signal_t signal_break;
+	uv_timer_t timer;
+	uv_timer_t timer_release;
+
+	uv_loop_t * loop;
+
 public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);
 	_main_info()
@@ -65,7 +72,9 @@ void show_help();
 
 /* Do platform-specific initialization. */
 void platform_init(int argc, char** argv);
-
+void platform_exit();
+void init(int argc, char** argv);
+void uninit();
 
 
 
