@@ -47,8 +47,9 @@ struct _main_info
 	map<struct tcp_task *, time_t> to_delete_task_list;
 	uv_mutex_t to_delete_task_list_mutex;
 
-	uv_signal_t signal_int;				
+	uv_signal_t signal_int;
 	uv_signal_t signal_break;
+	uv_signal_t signal_close;
 	uv_timer_t timer;
 	uv_timer_t timer_release;
 

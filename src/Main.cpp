@@ -23,7 +23,7 @@
 #include "default_task.h"
 #include <time.h>
 
-#define TIMEOUT_FOR_RELEASE							20			/*seconds*/
+#define TIMEOUT_FOR_RELEASE					20		/*seconds*/
 
 #define QUEUE_PREV(q)       (*(QUEUE **) &((*(q))[1]))
 #define QUEUE_EMPTY(q)                                                        \
@@ -41,7 +41,7 @@ LONGLONG g_FreeCount = 0;
 struct _main_config main_config={
 	-1,
 	50000,
-	100
+	10000
 };
 
 struct _main_info main_info;
@@ -68,7 +68,7 @@ static void timer_release_cb(uv_timer_t *handle)
 			if ((uv_is_closing((uv_handle_t*)&piter->first->conn))
 				&& piter->first->conn.reqs_pending == 0
 				&& piter->first->conn.activecnt == 0
-				//&& t - piter->second>TIMEOUT_FOR_RELEASE
+				&& t - piter->second>TIMEOUT_FOR_RELEASE
 				)
 			{
 				free(piter->first);
@@ -109,8 +109,9 @@ static void timer_cb(uv_timer_t *handle)
 
 void signal_unexpected_cb(uv_signal_t* handle, int signum)
 { 
-	if (SIGINT == signum || 
-		SIGBREAK == signum)
+	if (SIGINT == signum ||
+		SIGBREAK == signum ||
+		SIGHUP == signum)
 	{
 		uv_stop(main_info.loop);
 
@@ -131,6 +132,10 @@ void init(int argc, char** argv)
 	ASSERT(r == 0);
 	r = uv_signal_start(&main_info.signal_break, signal_unexpected_cb, SIGBREAK);		//Ctrl+Break
 	ASSERT(r == 0);
+	r = uv_signal_init(main_info.loop, &main_info.signal_close);
+	ASSERT(r == 0);
+	r = uv_signal_start(&main_info.signal_close, signal_unexpected_cb, SIGHUP);			//Close
+	ASSERT(r == 0);
 
 	argv = uv_setup_args(argc, argv);
 
@@ -141,7 +146,7 @@ void init(int argc, char** argv)
 
 	r = uv_timer_init(main_info.loop, &main_info.timer_release);
 	ASSERT(r == 0);
-	r = uv_timer_start(&main_info.timer_release, timer_release_cb, 1000, 1000);
+	r = uv_timer_start(&main_info.timer_release, timer_release_cb, 10000, 10000);
 	ASSERT(r == 0);
 }
 

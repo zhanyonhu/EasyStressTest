@@ -108,6 +108,7 @@ do {\
 	abort();                                              \
 } while (0)
 
+#ifdef _DEBUG
 #define ASSERT(expr)                                      \
 do {\
 \
@@ -122,6 +123,15 @@ if (!(expr)) {\
 	abort();                                              \
 }                                                       \
 } while (0)
+#else	/* _DEBUG*/
+#define ASSERT(expr)   
+#endif	/* _DEBUG*/
+
+#ifdef _DEBUG
+#define VERIFY(expr)		ASSERT(expr)
+#else	/* _DEBUG*/
+#define VERIFY(expr)		expr
+#endif	/* _DEBUG*/
 
 /* This macro cleans up the main loop. This is used to avoid valgrind
 * warnings about memory being "leaked" by the main event loop.
@@ -211,7 +221,7 @@ do {\
 	#undef malloc
 	#define malloc(x)	HeapAlloc(g_Heap, 0, x); InterlockedIncrement64(&g_MallocCount);
 	#undef free
-	#define free(x)		HeapFree(g_Heap, 0, x); InterlockedIncrement64(&g_FreeCount);
+#define free(x)		VERIFY(HeapFree(g_Heap, 0, x)); InterlockedIncrement64(&g_FreeCount);
 #endif /*WIN32*/
 
 #endif /* TASK_H_ */
