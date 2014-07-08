@@ -27,8 +27,8 @@ extern "C"
 #include "commondef.h"
 };
 
-#include <boost/thread/thread.hpp>
-using namespace boost;
+#include <boost/threadpool.hpp>
+using namespace boost::threadpool;
 
 #include <set>
 #include <map>
@@ -59,7 +59,7 @@ struct _main_info
 
 	uv_loop_t * loop;
 
-	thread_group thread_pool;
+	threadpool thread_pool;
 
 public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);

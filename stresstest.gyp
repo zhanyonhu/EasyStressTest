@@ -36,6 +36,7 @@
 		'include',
 		'src/',
 		'third/libuv/include',
+		'third/threadpool',
 	  ],
       'sources': [
         'src/Main.cpp',
