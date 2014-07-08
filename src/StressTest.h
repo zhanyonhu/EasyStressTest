@@ -28,7 +28,7 @@ extern "C"
 };
 
 #include <boost/threadpool.hpp>
-using namespace boost::threadpool;
+using namespace boost;
 
 #include <set>
 #include <map>
@@ -41,7 +41,7 @@ struct _main_config
 	unsigned int task_min_running;			//minimize running at the same time
 	unsigned int task_add_once;				//When the running instance count less than a certain value <task_min_running> , 
 											//automatically increase the number of running instance
-	unsigned int max_task_pre_thread;		//max tasks for pre-thread
+	unsigned int thread_num;				//task thread number
 };
 extern struct _main_config main_config;
 
@@ -59,7 +59,7 @@ struct _main_info
 
 	uv_loop_t * loop;
 
-	threadpool thread_pool;
+	threadpool::pool threads;
 
 public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);

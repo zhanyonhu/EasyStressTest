@@ -92,8 +92,11 @@ int tcp_task_post(struct tcp_task * ptask)
 	ptask->work_req.data = ptask;
 	ptask->connect_req.data = ptask;
 	ptask->conn.data = ptask;
+
 	//r = uv_queue_work(uv_default_loop(), &ptask->work_req, work_cb, after_work_cb);
 	//ASSERT(r == 0);
+
 	work_cb(&ptask->work_req);
+	main_info.threads.schedule(boost::bind(work_cb, &ptask->work_req));
 	return 0;
 }

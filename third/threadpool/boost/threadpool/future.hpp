@@ -17,7 +17,7 @@
 #define THREADPOOL_FUTURE_HPP_INCLUDED
 
 
-  
+
 #include "./detail/future.hpp"
 #include <boost/utility/enable_if.hpp>
 

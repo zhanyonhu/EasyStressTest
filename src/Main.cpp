@@ -91,10 +91,6 @@ static void timer_cb(uv_timer_t *handle)
 	{
 		printf("timer>>taskcount=%d, will add=%d\n", main_info.task_list.size(), main_config.task_add_once);
 
-		if (main_config.max_task_pre_thread*)
-		{
-		}
-
 		int r = 0;
 		//add tasks
 		for (unsigned int i = 0; i < main_config.task_add_once; i++)
@@ -152,6 +148,7 @@ void init(int argc, char** argv)
 	ASSERT(r == 0);
 	r = uv_timer_start(&main_info.timer_release, timer_release_cb, 10000, 10000);
 	ASSERT(r == 0);
+
 }
 
 void uninit()
@@ -209,15 +206,14 @@ int main(int argc, char **argv)
 		{
 			main_config.task_add_once = atol(pargv + strlen("-ac="));
 		}
-		else if ((pargv = strstr(argv[arg_i], "-max_task_pre_thread=")) != NULL)
+		else if ((pargv = strstr(argv[arg_i], "-thread_num=")) != NULL)
 		{
-			main_config.max_task_pre_thread = atol(pargv + strlen("-max_task_pre_thread="));
+			main_config.thread_num = atol(pargv + strlen("-thread_num="));
 		}
-		else if ((pargv = strstr(argv[arg_i], "-tp=")) != NULL)
+		else if ((pargv = strstr(argv[arg_i], "-tn=")) != NULL)
 		{
-			main_config.max_task_pre_thread = atol(pargv + strlen("-tp="));
+			main_config.thread_num = atol(pargv + strlen("-tn="));
 		}
-
 		else if (stricmp(argv[arg_i], "-help") == 0 ||
 			stricmp(argv[arg_i], "/help") == 0 ||
 			stricmp(argv[arg_i], "help") == 0)
@@ -237,9 +233,9 @@ int main(int argc, char **argv)
 		main_config.task_min_running = 1;
 	}
 
-	if (main_config.max_task_pre_thread <= 0)
+	if (main_config.thread_num <= 0)
 	{
-		main_config.max_task_pre_thread = 1000;
+		main_config.thread_num = 3;
 	}
 
 	printf("stress test tool is running!\n");
@@ -321,7 +317,7 @@ void show_help()
 	printf("-taskcount=***\t\t-c: the task execution times\n");
 	printf("-task_min_running=***\t\t-mc: minimize running at the same time\n");
 	printf("-task_add_once=***\t\t-ac: When the running instance count less than a certain value <task_min_running> , automatically increase the number of running instance\n");
-	printf("-max_task_pre_thread=***\t\t-tp: max tasks for pre-thread\n");
+	printf("-thread_num=***\t\t-tn: task thread number\n");
 	printf("\n\nPress any key to continue ......");
 	getchar();
 }
