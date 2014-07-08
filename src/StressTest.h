@@ -27,6 +27,9 @@ extern "C"
 #include "commondef.h"
 };
 
+#include <boost/thread/thread.hpp>
+using namespace boost;
+
 #include <set>
 #include <map>
 using namespace std;
@@ -38,6 +41,7 @@ struct _main_config
 	unsigned int task_min_running;			//minimize running at the same time
 	unsigned int task_add_once;				//When the running instance count less than a certain value <task_min_running> , 
 											//automatically increase the number of running instance
+	unsigned int max_task_pre_thread;		//max tasks for pre-thread
 };
 extern struct _main_config main_config;
 
@@ -54,6 +58,8 @@ struct _main_info
 	uv_timer_t timer_release;
 
 	uv_loop_t * loop;
+
+	thread_group thread_pool;
 
 public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);

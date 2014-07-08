@@ -40,8 +40,8 @@ LONGLONG g_FreeCount = 0;
 
 struct _main_config main_config={
 	-1,
-	50000,
-	10000
+	30000,
+	100
 };
 
 struct _main_info main_info;
@@ -90,6 +90,10 @@ static void timer_cb(uv_timer_t *handle)
 	if (main_info.task_list.size() < main_config.task_min_running)
 	{
 		printf("timer>>taskcount=%d, will add=%d\n", main_info.task_list.size(), main_config.task_add_once);
+
+		if (main_config.max_task_pre_thread*)
+		{
+		}
 
 		int r = 0;
 		//add tasks
@@ -205,6 +209,14 @@ int main(int argc, char **argv)
 		{
 			main_config.task_add_once = atol(pargv + strlen("-ac="));
 		}
+		else if ((pargv = strstr(argv[arg_i], "-max_task_pre_thread=")) != NULL)
+		{
+			main_config.max_task_pre_thread = atol(pargv + strlen("-max_task_pre_thread="));
+		}
+		else if ((pargv = strstr(argv[arg_i], "-tp=")) != NULL)
+		{
+			main_config.max_task_pre_thread = atol(pargv + strlen("-tp="));
+		}
 
 		else if (stricmp(argv[arg_i], "-help") == 0 ||
 			stricmp(argv[arg_i], "/help") == 0 ||
@@ -222,7 +234,12 @@ int main(int argc, char **argv)
 
 	if (main_config.task_min_running <= 0)
 	{
-		main_config.task_add_once = 1;
+		main_config.task_min_running = 1;
+	}
+
+	if (main_config.max_task_pre_thread <= 0)
+	{
+		main_config.max_task_pre_thread = 1000;
 	}
 
 	printf("stress test tool is running!\n");
@@ -304,6 +321,7 @@ void show_help()
 	printf("-taskcount=***\t\t-c: the task execution times\n");
 	printf("-task_min_running=***\t\t-mc: minimize running at the same time\n");
 	printf("-task_add_once=***\t\t-ac: When the running instance count less than a certain value <task_min_running> , automatically increase the number of running instance\n");
+	printf("-max_task_pre_thread=***\t\t-tp: max tasks for pre-thread\n");
 	printf("\n\nPress any key to continue ......");
 	getchar();
 }
