@@ -24,6 +24,13 @@
 #include <time.h>
 
 #define TIMEOUT_FOR_RELEASE					20		/*seconds*/
+#ifdef _DEBUG
+#define TIMER_TIME_RELASE					10000
+#define TIMER_TIME_ADD						10
+#else
+#define TIMER_TIME_RELASE					10000
+#define TIMER_TIME_ADD						100
+#endif
 
 #define QUEUE_PREV(q)       (*(QUEUE **) &((*(q))[1]))
 #define QUEUE_EMPTY(q)                                                        \
@@ -39,9 +46,11 @@ LONGLONG g_FreeCount = 0;
 
 
 struct _main_config main_config={
+	false,
 	-1,
-	30000,
-	100
+	300000,
+	1000,
+	5
 };
 
 struct _main_info main_info;
@@ -56,6 +65,10 @@ void _main_info::AddTask_ToBeDeleted(struct tcp_task * ptask)
 
 static void timer_release_cb(uv_timer_t *handle)
 {
+#ifdef DEBUG
+	terminate();
+#endif // DEBUG
+
 	if (main_info.to_delete_task_list.size()>0)
 	{
 		uv_mutex_lock(&main_info.to_delete_task_list_mutex);
@@ -119,8 +132,12 @@ void signal_unexpected_cb(uv_signal_t* handle, int signum)
 	}
 }
 
+#include <thread>
+#include <string>
+#include <mutex>
 void init(int argc, char** argv)
 {
+	std::mutex m;
 	main_info.loop = uv_default_loop();
 
 	int r = 0;
@@ -141,19 +158,22 @@ void init(int argc, char** argv)
 
 	r = uv_timer_init(main_info.loop, &main_info.timer);
 	ASSERT(r == 0);
-	r = uv_timer_start(&main_info.timer, timer_cb, 0, 100);
+	r = uv_timer_start(&main_info.timer, timer_cb, 0, TIMER_TIME_ADD);
 	ASSERT(r == 0);
 
 	r = uv_timer_init(main_info.loop, &main_info.timer_release);
 	ASSERT(r == 0);
-	r = uv_timer_start(&main_info.timer_release, timer_release_cb, 10000, 10000);
+	r = uv_timer_start(&main_info.timer_release, timer_release_cb, TIMER_TIME_RELASE, TIMER_TIME_RELASE);
 	ASSERT(r == 0);
 
+//	main_info.threads = new threadpool::pool(main_config.thread_num);
 }
 
 void uninit()
 {
 	int r = 0;
+
+//	main_info.threads->wait();
 
 	close_loop(main_info.loop);
 	r = uv_loop_close(main_info.loop);
@@ -175,11 +195,13 @@ void uninit()
 	main_info.to_delete_task_list.clear();
 	main_info.task_list.clear();
 	uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
+
 }
 
 int main(int argc, char **argv)
 {
 	const char * pargv = NULL;
+
 	for (int arg_i = 0; arg_i < argc; arg_i++)
 	{
 		if ((pargv = strstr(argv[arg_i], "-taskcount=")) != NULL)
@@ -206,13 +228,21 @@ int main(int argc, char **argv)
 		{
 			main_config.task_add_once = atol(pargv + strlen("-ac="));
 		}
-		else if ((pargv = strstr(argv[arg_i], "-thread_num=")) != NULL)
+		else if ((pargv = strstr(argv[arg_i], "-thread=")) != NULL)
 		{
-			main_config.thread_num = atol(pargv + strlen("-thread_num="));
+			main_config.thread_num = atol(pargv + strlen("-thread="));
 		}
 		else if ((pargv = strstr(argv[arg_i], "-tn=")) != NULL)
 		{
 			main_config.thread_num = atol(pargv + strlen("-tn="));
+		}
+		else if (0 == stricmp(argv[arg_i], "-flood"))
+		{
+			main_config.flood_begin = true;
+		}
+		else if (0 == stricmp(argv[arg_i], "-f"))
+		{
+			main_config.flood_begin = true;
 		}
 		else if (stricmp(argv[arg_i], "-help") == 0 ||
 			stricmp(argv[arg_i], "/help") == 0 ||
@@ -317,7 +347,7 @@ void show_help()
 	printf("-taskcount=***\t\t-c: the task execution times\n");
 	printf("-task_min_running=***\t\t-mc: minimize running at the same time\n");
 	printf("-task_add_once=***\t\t-ac: When the running instance count less than a certain value <task_min_running> , automatically increase the number of running instance\n");
-	printf("-thread_num=***\t\t-tn: task thread number\n");
+	printf("-thread=***\t\t-tn: task thread number\n");
 	printf("\n\nPress any key to continue ......");
 	getchar();
 }

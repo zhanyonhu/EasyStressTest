@@ -27,9 +27,6 @@ extern "C"
 #include "commondef.h"
 };
 
-#include <boost/threadpool.hpp>
-using namespace boost;
-
 #include <set>
 #include <map>
 using namespace std;
@@ -37,6 +34,7 @@ using namespace std;
 
 struct _main_config
 {
+	bool flood_begin;				//flood begin (The initial rapid filling)
 	unsigned int task_count;				//execute times
 	unsigned int task_min_running;			//minimize running at the same time
 	unsigned int task_add_once;				//When the running instance count less than a certain value <task_min_running> , 
@@ -59,17 +57,22 @@ struct _main_info
 
 	uv_loop_t * loop;
 
-	threadpool::pool threads;
+//	threadpool::pool * threads;
 
 public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);
 	_main_info()
 	{
+//		threads = NULL;
 		uv_mutex_init(&to_delete_task_list_mutex);
 	}
 	~_main_info()
 	{
 		uv_mutex_destroy(&to_delete_task_list_mutex);
+// 		if (threads!=NULL)
+// 		{
+// 			delete threads;
+// 		}
 	}
 };
 extern struct _main_info main_info;

@@ -46,6 +46,8 @@
         'src/task.cpp',
         'src/default_task.h',
         'src/default_task.cpp',
+        'src/threadpool.h',
+        'src/threadpool.cpp',
       ],
 	  
 		'defines': [

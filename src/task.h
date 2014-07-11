@@ -19,4 +19,4 @@ struct tcp_task
 
 int tcp_task_post(struct tcp_task * ptask);
 
-#endif	/*_DEFAULT_TASK_H_*/
+#endif	/*_TASK_H_*/
