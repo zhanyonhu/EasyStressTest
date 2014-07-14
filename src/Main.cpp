@@ -20,7 +20,6 @@
  */
 
 #include "StressTest.h"
-#include "default_task.h"
 #include <time.h>
 
 #define TIMEOUT_FOR_RELEASE					20		/*seconds*/
@@ -35,9 +34,9 @@
 struct _main_config main_config={
 	false,
 	-1,
-	800000,
+	130000,
 	1000,
-	5
+	10
 };
 
 struct _main_info main_info;
@@ -83,9 +82,9 @@ static void timer_release_cb(uv_timer_t *handle)
 
 static void timer_cb(uv_timer_t *handle)
 {
-	if (main_info.task_list.size() < main_config.task_min_running)
+	if (main_info.tasks.Count() < main_config.task_min_running)
 	{
-		printf("timer>>taskcount=%d, will add=%d\n", main_info.task_list.size(), main_config.task_add_once);
+		printf("timer>>taskcount=%d, will add=%d\n", main_info.tasks.Count(), main_config.task_add_once);
 
 		int r = 0;
 		//add tasks
@@ -94,9 +93,9 @@ static void timer_cb(uv_timer_t *handle)
 			struct default_task_node task = {0};
 			r = uv_ip4_addr("1.1.1.1", 80, &task.tcp.addr);
 			ASSERT(r == 0);
-			r = tcp_task_post(&task.tcp);
+			struct default_task_node * ptask = main_info.tasks.Add(task);
+			r = tcp_task_post(&ptask->tcp);
 			ASSERT(r == 0);
-			main_info.task_list.insert(std::make_pair(++main_info.cur_id, task));
 		}
 	}
 }
@@ -113,12 +112,8 @@ void signal_unexpected_cb(uv_signal_t* handle, int signum)
 	}
 }
 
-#include <thread>
-#include <string>
-#include <mutex>
 void init(int argc, char** argv)
 {
-	std::mutex m;
 	main_info.loop = uv_default_loop();
 
 	int r = 0;
@@ -147,14 +142,14 @@ void init(int argc, char** argv)
 	r = uv_timer_start(&main_info.timer_release, timer_release_cb, TIMER_TIME_RELASE, TIMER_TIME_RELASE);
 	ASSERT(r == 0);
 
-//	main_info.threads = new threadpool::pool(main_config.thread_num);
+	main_info.threads.SetThreadNumber(main_config.thread_num);
 }
 
 void uninit()
 {
 	int r = 0;
 
-//	main_info.threads->wait();
+	main_info.threads.WaitAll();
 
 	close_loop(main_info.loop);
 	r = uv_loop_close(main_info.loop);
@@ -166,10 +161,7 @@ void uninit()
 	r = uv_signal_stop(&main_info.signal_break);
 	ASSERT(r == 0);
 
-// 	uv_mutex_lock(&main_info.to_delete_task_list_mutex);
-// 	main_info.to_delete_task_list.clear();
-	main_info.task_list.clear();
-//	uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
+	main_info.tasks.Clear();
 
 }
 

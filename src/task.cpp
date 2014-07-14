@@ -67,12 +67,27 @@ static void connect_cb(uv_connect_t* req, int status)
 	ASSERT(r == 0);
 }
 
-static void work_cb(uv_work_t* req) 
+static void work_cb(void* req)
+{
+	int r = 0;
+	struct tcp_task * ptask = (struct tcp_task *)req;
+
+	r = uv_tcp_init(main_info.loop, &ptask->conn);
+	ASSERT(r == 0);
+
+	r = uv_tcp_connect(&ptask->connect_req,
+		&ptask->conn,
+		(const struct sockaddr*) &ptask->addr,
+		connect_cb);
+
+}
+
+static void work_uv_cb(uv_work_t* req)
 {
 	int r = 0;
 	struct tcp_task * ptask = (struct tcp_task *)req->data;
 
-	r = uv_tcp_init(uv_default_loop(), &ptask->conn);
+	r = uv_tcp_init(main_info.loop, &ptask->conn);
 	ASSERT(r == 0);
 
 	r = uv_tcp_connect(&ptask->connect_req,
@@ -88,15 +103,45 @@ static void after_work_cb(uv_work_t* req, int status)
 
 int tcp_task_post(struct tcp_task * ptask)
 {
-	int r=0;
 	ptask->work_req.data = ptask;
 	ptask->connect_req.data = ptask;
 	ptask->conn.data = ptask;
 
-	//r = uv_queue_work(uv_default_loop(), &ptask->work_req, work_cb, after_work_cb);
-	//ASSERT(r == 0);
+	int r = 0;
+	//r = uv_queue_work(main_info.loop, &ptask->work_req, work_uv_cb, after_work_cb);
+	ASSERT(r == 0);
 
-//	VERIFY(main_info.threads->schedule(boost::bind(work_cb, &ptask->work_req)));
+	main_info.threads.AddTask(work_cb, ptask);
 
 	return 0;
+}
+
+CTasks::CTasks() :
+task_allocator(&task_pool),
+task_list(task_allocator)
+{
+	cur_id = 0;
+}
+
+CTasks::~CTasks()
+{
+	Clear();
+}
+
+void CTasks::Clear()
+{
+	task_list.clear();
+}
+
+struct default_task_node * CTasks::Add(struct default_task_node & task)
+{
+	std::pair<std::map<unsigned long long int, struct default_task_node, std::less<unsigned long long int>, std::stl_allocator<std::pair<unsigned long long int, struct default_task_node>, std::_Tree_node<std::pair<unsigned long long int, struct default_task_node>, struct default_task_node>>>::iterator, bool> piter;
+	piter=task_list.insert(std::make_pair(++cur_id, task));
+	ASSERT(piter.second);
+	if (!piter.second)
+	{
+		return NULL;
+	}
+
+	return &piter.first->second;
 }

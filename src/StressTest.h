@@ -27,10 +27,8 @@ extern "C"
 #include "commondef.h"
 };
 
-#include <set>
-#include <map>
-#include "allocator.h"
-#include "default_task.h"
+#include "task.h"
+#include "threadpool.h"
 
 struct _main_config
 {
@@ -45,11 +43,7 @@ extern struct _main_config main_config;
 
 struct _main_info
 {
-	boost::object_pool<std::_Tree_node<std::pair<long long int, struct default_task_node>, struct default_task_node>> task_pool;
-	std::stl_allocator<std::pair<int, void *>, std::_Tree_node<std::pair<long long int, struct default_task_node>, struct default_task_node>> task_allocator;
-	std::map<long long int, struct default_task_node, std::less<long long int>, std::stl_allocator<std::pair<int, void *>, std::_Tree_node<std::pair<long long int, struct default_task_node>, struct default_task_node>>> task_list;
-	long long int cur_id;
-
+	CTasks tasks;
 	uv_signal_t signal_int;
 	uv_signal_t signal_break;
 	uv_signal_t signal_close;
@@ -58,25 +52,15 @@ struct _main_info
 
 	uv_loop_t * loop;
 
-//	threadpool::pool * threads;
+	CThreadPool threads;
 
 public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);
-	_main_info() :
-		task_allocator(&task_pool),
-		task_list(task_allocator)
+	_main_info()
 	{
-		cur_id = 0;
-//		threads = NULL;
-//		uv_mutex_init(&to_delete_task_list_mutex);
 	}
 	~_main_info()
 	{
-//		uv_mutex_destroy(&to_delete_task_list_mutex);
-// 		if (threads!=NULL)
-// 		{
-// 			delete threads;
-// 		}
 	}
 };
 extern struct _main_info main_info;
