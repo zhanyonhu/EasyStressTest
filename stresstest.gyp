@@ -48,6 +48,7 @@
         'src/default_task.cpp',
         'src/threadpool.h',
         'src/threadpool.cpp',
+        'src/allocator.h',
       ],
 	  
 		'defines': [

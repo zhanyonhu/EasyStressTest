@@ -32,23 +32,10 @@
 #define TIMER_TIME_ADD						100
 #endif
 
-#define QUEUE_PREV(q)       (*(QUEUE **) &((*(q))[1]))
-#define QUEUE_EMPTY(q)                                                        \
-	((const QUEUE *) (q) == (const QUEUE *) QUEUE_NEXT(q))
-
-#ifdef WIN32
-HANDLE g_Heap = GetProcessHeap();
-#ifdef DEBUG
-LONGLONG g_MallocCount = 0;
-LONGLONG g_FreeCount = 0;
-#endif // DEBUG
-#endif /*WIN32*/
-
-
 struct _main_config main_config={
 	false,
 	-1,
-	300000,
+	800000,
 	1000,
 	5
 };
@@ -57,45 +44,41 @@ struct _main_info main_info;
 
 void _main_info::AddTask_ToBeDeleted(struct tcp_task * ptask)
 {
-	uv_mutex_lock(&to_delete_task_list_mutex);
-	time_t t = time(NULL);
-	to_delete_task_list.insert(make_pair(ptask, t));
-	uv_mutex_unlock(&to_delete_task_list_mutex);
+// 	uv_mutex_lock(&to_delete_task_list_mutex);
+// 	time_t t = time(NULL);
+// 	to_delete_task_list.insert(std::make_pair(ptask, t));
+// 	uv_mutex_unlock(&to_delete_task_list_mutex);
 }
 
 static void timer_release_cb(uv_timer_t *handle)
 {
-#ifdef DEBUG
-	terminate();
-#endif // DEBUG
-
-	if (main_info.to_delete_task_list.size()>0)
-	{
-		uv_mutex_lock(&main_info.to_delete_task_list_mutex);
-		map<struct tcp_task *, time_t>::iterator piter;
-		int count = main_info.to_delete_task_list.size()/2;
-		int i = 0;
-		time_t t = time(NULL);
-		for (piter = main_info.to_delete_task_list.begin(); piter != main_info.to_delete_task_list.end() && i<count; i++)
-		{
-			if ((uv_is_closing((uv_handle_t*)&piter->first->conn))
-				&& piter->first->conn.reqs_pending == 0
-				&& piter->first->conn.activecnt == 0
-				&& t - piter->second>TIMEOUT_FOR_RELEASE
-				)
-			{
-				free(piter->first);
-				main_info.task_list.erase(piter->first);
-				piter = main_info.to_delete_task_list.erase(piter);
-			}
-			else
-			{
-				piter++;
-				break;
-			}
-		}
-		uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
-	}
+// 	if (main_info.to_delete_task_list.size()>0)
+// 	{
+// 		uv_mutex_lock(&main_info.to_delete_task_list_mutex);
+// 		std::map<struct tcp_task *, time_t>::iterator piter;
+// 		int count = main_info.to_delete_task_list.size()/2;
+// 		int i = 0;
+// 		time_t t = time(NULL);
+// 		for (piter = main_info.to_delete_task_list.begin(); piter != main_info.to_delete_task_list.end() && i<count; i++)
+// 		{
+// 			if ((uv_is_closing((uv_handle_t*)&piter->first->conn))
+// 				&& piter->first->conn.reqs_pending == 0
+// 				&& piter->first->conn.activecnt == 0
+// 				&& t - piter->second>TIMEOUT_FOR_RELEASE
+// 				)
+// 			{
+// 				free(piter->first);
+// 				main_info.task_list.erase(piter->first);
+// 				piter = main_info.to_delete_task_list.erase(piter);
+// 			}
+// 			else
+// 			{
+// 				piter++;
+// 				break;
+// 			}
+// 		}
+// 		uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
+// 	}
 }
 
 static void timer_cb(uv_timer_t *handle)
@@ -108,14 +91,12 @@ static void timer_cb(uv_timer_t *handle)
 		//add tasks
 		for (unsigned int i = 0; i < main_config.task_add_once; i++)
 		{
-			struct default_task_node * ptask = (struct default_task_node *)malloc(sizeof(struct default_task_node));
-			ASSERT(ptask != NULL);
-			memset(ptask, 0, sizeof(struct default_task_node));
-			r = uv_ip4_addr("1.1.1.1", 80, &ptask->tcp.addr);
+			struct default_task_node task = {0};
+			r = uv_ip4_addr("1.1.1.1", 80, &task.tcp.addr);
 			ASSERT(r == 0);
-			r = tcp_task_post(&ptask->tcp);
+			r = tcp_task_post(&task.tcp);
 			ASSERT(r == 0);
-			main_info.task_list.insert(&ptask->tcp);
+			main_info.task_list.insert(std::make_pair(++main_info.cur_id, task));
 		}
 	}
 }
@@ -185,16 +166,10 @@ void uninit()
 	r = uv_signal_stop(&main_info.signal_break);
 	ASSERT(r == 0);
 
-	set<struct tcp_task *>::iterator piter;
-	for (piter = main_info.task_list.begin(); piter != main_info.task_list.end(); piter++)
-	{
-		free(*piter);
-	}
-
-	uv_mutex_lock(&main_info.to_delete_task_list_mutex);
-	main_info.to_delete_task_list.clear();
+// 	uv_mutex_lock(&main_info.to_delete_task_list_mutex);
+// 	main_info.to_delete_task_list.clear();
 	main_info.task_list.clear();
-	uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
+//	uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
 
 }
 
@@ -311,18 +286,10 @@ void platform_init(int argc, char **argv)
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
 
-	g_Heap = HeapCreate(HEAP_GENERATE_EXCEPTIONS | HEAP_ZERO_MEMORY, 0x100000, 0x40000000);
-	ASSERT(g_Heap != NULL);
 }
 
 void platform_exit()
 {
-	HeapDestroy(g_Heap);
-	g_Heap = GetProcessHeap();
-
-#ifdef DEBUG
-	printf("alloc=%lld, free=%lld\n", g_MallocCount, g_FreeCount);
-#endif // DEBUG
 }
 #else /*WIN32*/
 

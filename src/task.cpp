@@ -19,7 +19,7 @@ static void read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 	struct tcp_task * ptask = (struct tcp_task *)stream->data;
 	if (nread < 0) 
 	{
-		LOGF_TASK_ERR("read_cb error: %s\n", uv_err_name(nread));
+		LOGF_TASK_ERR("read_cb error: %s\n", uv_err_name((int)nread));
 		ASSERT(nread == UV_ECONNRESET || nread == UV_EOF);
 
 		uv_close((uv_handle_t*)&ptask->conn, NULL);

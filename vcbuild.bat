@@ -17,7 +17,7 @@ set target=Build
 set noprojgen=
 set nobuild=
 set run=
-set target_arch=ia32
+set target_arch=x64
 set vs_toolset=x86
 set platform=WIN32
 set library=executable
@@ -89,7 +89,7 @@ set config=Debug
 if defined noprojgen goto msbuild
 
 @rem Build libuv.
-if exist third\libuv\gyp_uv.py goto have_libuv
+if exist third\libuv\.git goto have_libuv
 echo git clone https://github.com/joyent/libuv.git third/libuv
 git clone https://github.com/joyent/libuv.git third/libuv
 if errorlevel 1 goto libuv_install_failed

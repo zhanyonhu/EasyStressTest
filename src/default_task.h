@@ -6,6 +6,7 @@
 struct default_task_node 
 {
 	struct tcp_task tcp;
+	char reversed[512];
 };
 
 

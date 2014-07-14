@@ -211,17 +211,4 @@ do {\
 	}
 
 
-#ifdef WIN32
-	extern HANDLE g_Heap;
-#ifdef DEBUG
-	extern LONGLONG g_MallocCount;
-	extern LONGLONG g_FreeCount;
-#endif // DEBUG
-
-	#undef malloc
-	#define malloc(x)	HeapAlloc(g_Heap, 0, x); InterlockedIncrement64(&g_MallocCount);
-	#undef free
-#define free(x)		VERIFY(HeapFree(g_Heap, 0, x)); InterlockedIncrement64(&g_FreeCount);
-#endif /*WIN32*/
-
 #endif /* TASK_H_ */
