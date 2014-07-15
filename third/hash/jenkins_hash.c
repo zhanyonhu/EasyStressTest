@@ -9,9 +9,8 @@
  *       or commercial.  It's free."
  *
  */
-#include "memcached.h"
 #include "jenkins_hash.h"
-
+#include "hash.h"
 /*
  * Since the hash function does bit manipulation, it needs to know
  * whether it's big or little-endian. ENDIAN_LITTLE and ENDIAN_BIG

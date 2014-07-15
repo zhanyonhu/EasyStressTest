@@ -1,9 +1,7 @@
 #include "threadpool.h"
 
 
-CThreadPool::CThreadPool(int threadnum/* = 1*/) :
-m_task_allocator(&m_task_pool),
-m_tasks(m_task_allocator)
+CThreadPool::CThreadPool(int threadnum/* = 1*/)
 {
 	uv_mutex_init(&m_mutex);
 	uv_cond_init(&m_cond);

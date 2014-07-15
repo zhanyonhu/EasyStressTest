@@ -116,9 +116,7 @@ int tcp_task_post(struct tcp_task * ptask)
 	return 0;
 }
 
-CTasks::CTasks() :
-task_allocator(&task_pool),
-task_list(task_allocator)
+CTasks::CTasks()
 {
 	cur_id = 0;
 }
@@ -135,7 +133,7 @@ void CTasks::Clear()
 
 struct default_task_node * CTasks::Add(struct default_task_node & task)
 {
-	std::pair<std::map<unsigned long long int, struct default_task_node, std::less<unsigned long long int>, std::stl_allocator<std::pair<unsigned long long int, struct default_task_node>, std::_Tree_node<std::pair<unsigned long long int, struct default_task_node>, struct default_task_node>>>::iterator, bool> piter;
+	std::pair<std::map<unsigned long long int, struct default_task_node>::iterator, bool> piter;
 	piter=task_list.insert(std::make_pair(++cur_id, task));
 	ASSERT(piter.second);
 	if (!piter.second)

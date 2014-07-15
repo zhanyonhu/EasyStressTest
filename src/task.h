@@ -6,7 +6,6 @@
 
 #include <set>
 #include <map>
-#include "allocator.h"
 
 struct tcp_task_config
 {
@@ -42,9 +41,7 @@ public:
 	size_t Count(){ return task_list.size(); };
 
 protected:
-	boost::object_pool<std::_Tree_node<std::pair<unsigned long long int, struct default_task_node>, struct default_task_node>> task_pool;
-	std::stl_allocator<std::pair<unsigned long long int, struct default_task_node>, std::_Tree_node<std::pair<unsigned long long int, struct default_task_node>, struct default_task_node>> task_allocator;
-	std::map<unsigned long long int, struct default_task_node, std::less<unsigned long long int>, std::stl_allocator<std::pair<unsigned long long int, struct default_task_node>, std::_Tree_node<std::pair<unsigned long long int, struct default_task_node>, struct default_task_node>>> task_list;
+	std::map<unsigned long long int, struct default_task_node> task_list;
 	unsigned long long int cur_id;
 };
 

@@ -47,7 +47,12 @@
         'src/itask.h',
         'src/threadpool.h',
         'src/threadpool.cpp',
-        'src/allocator.h',
+        'third/hash/hash.h',
+        'third/hash/hash.c',
+        'third/hash/jenkins_hash.h',
+        'third/hash/jenkins_hash.c',
+        'third/hash/murmur3_hash.h',
+        'third/hash/murmur3_hash.c',
       ],
 	  
 		'defines': [

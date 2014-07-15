@@ -1,6 +1,8 @@
 #ifndef JENKINS_HASH_H
 #define    JENKINS_HASH_H
 
+#include "uv.h"
+
 #ifdef    __cplusplus
 extern "C" {
 #endif

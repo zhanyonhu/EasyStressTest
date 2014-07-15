@@ -7,7 +7,6 @@
 #include <list>
 #include <thread>
 
-#include "allocator.h"
 
 typedef void(*PWorker)(void* req);
 
@@ -52,9 +51,7 @@ protected:
 	std::vector<THREAD_NODE *> m_threads;
 	uv_cond_t m_cond;
 	uv_mutex_t m_mutex;
-	boost::object_pool<WORKER_NODE> m_task_pool;
-	std::stl_allocator<std::_List_node<WORKER_NODE, void *>, WORKER_NODE> m_task_allocator;
-	std::list<WORKER_NODE, std::stl_allocator<std::_List_node<WORKER_NODE, void *>, WORKER_NODE>> m_tasks;
+	std::list<WORKER_NODE> m_tasks;
 };
 
 #endif	/*_THREADPOLL_H_*/
