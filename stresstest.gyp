@@ -1,12 +1,13 @@
 {
   'variables': {
-    'uv_use_dtrace%': 'false',
-    # uv_parent_path is the relative path to libuv in the parent project
+    'ss_use_dtrace%': 'false',
+    'ss_jemalloc': 'true',
+    # ss_parent_path is the relative path to libuv in the parent project
     # this is only relevant when dtrace is enabled and libuv is a child project
     # as it's necessary to correctly locate the object files for post
     # processing.
     # XXX gyp is quite sensitive about paths with double / they don't normalize
-    'uv_parent_path': '/',
+    'ss_parent_path': '/',
   },
 
   'target_defaults': {
@@ -37,9 +38,12 @@
 		'src/',
 		'third/libuv/include',
 		'third/threadpool',
+		'third/jemalloc/include/jemalloc',
+		'third/jemalloc/include/msvc_compat',
 	  ],
       'sources': [
         'src/Main.cpp',
+        'src/commondef.cpp',
         'src/commondef.h',
         'src/StressTest.h',
         'src/task.h',
@@ -71,7 +75,7 @@
 			  'msvs_settings': {
 				'VCLinkerTool': {
 				  'AdditionalLibraryDirectories': [
-					'third\libuv\$(Configuration)\lib',
+					'third\\libuv\\$(Configuration)\\lib',
 				  ],
 				  'GenerateDebugInformation': 'true',
 				  'SubSystem': 1,
@@ -97,6 +101,7 @@
             '-Wno-unused-parameter',
           ],
 		  
+		  
 			'configurations': {
 				'Debug': {
 					  'library_dirs': [
@@ -109,6 +114,21 @@
 					  ],
 				}
 			},
+			
+			'configurations': 
+				['ss_jemalloc=="true"', {
+					'Debug': {
+						  'library_dirs': [
+							'../third/jemalloc/out/Debug',
+						  ],
+					},
+					'Release': {
+						  'library_dirs': [
+							'../third/jemalloc/out/Release',
+						  ],
+					}
+				},
+			],
 			
           'link_settings': {
             'libraries':[  '-lm',
@@ -123,6 +143,12 @@
               }],
             ],
           },
+		  
+          'link_settings': [
+			'ss_jemalloc=="true"', {
+				'libraries':[  '-ljemalloc' ],
+			},
+          ],
         }],
         [ 'OS=="mac"', {
           'defines': [
@@ -175,13 +201,12 @@
           },
         }],
         # FIXME(bnoordhuis or tjfontaine) Unify this, it's extremely ugly.
-        ['uv_use_dtrace=="true"', {
+        ['ss_use_dtrace=="true"', {
           'defines': [ 'HAVE_DTRACE=1' ],
           'dependencies': [ 'uv_dtrace_header' ],
           'include_dirs': [ '<(SHARED_INTERMEDIATE_DIR)' ],
         }],
       ]
     },
-
   ]
 }

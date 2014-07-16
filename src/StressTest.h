@@ -22,10 +22,7 @@
 #ifndef _STRESS_TEST_H_
 #define _STRESS_TEST_H_
 
-extern "C"
-{
 #include "commondef.h"
-};
 
 #include "task.h"
 #include "threadpool.h"

@@ -108,10 +108,10 @@ int tcp_task_post(struct tcp_task * ptask)
 	ptask->conn.data = ptask;
 
 	int r = 0;
-	//r = uv_queue_work(main_info.loop, &ptask->work_req, work_uv_cb, after_work_cb);
+	r = uv_queue_work(main_info.loop, &ptask->work_req, work_uv_cb, after_work_cb);
 	ASSERT(r == 0);
 
-	main_info.threads.AddTask(work_cb, ptask);
+	//main_info.threads.AddTask(work_cb, ptask);
 
 	return 0;
 }

@@ -171,11 +171,11 @@ if exist third/libuv (
 goto exit
 
 :help
-echo vcbuild.bat [debug/release] [test/bench] [clean] [noprojgen] [nobuild] [x86/x64] [static/shared]
+echo vcbuild.bat [debug/release] [test/bench] [clean] [noprojgen] [nobuild] [x86/x64] [static/shared] [update]
 echo Examples:
 echo   vcbuild.bat              : builds debug build
-echo   vcbuild.bat test         : builds debug build and runs tests
-echo   vcbuild.bat release bench: builds release build and runs benchmarks
+echo   vcbuild.bat x64       	: builds debug x64 build
+echo   vcbuild.bat update       : git pull source
 goto exit
 
 :exit

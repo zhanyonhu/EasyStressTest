@@ -26,6 +26,14 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#ifdef _USE_JEMALLOC
+#undef malloc
+#undef free
+#define malloc je_malloc
+#define free je_free
+#include "jemalloc.h"
+#endif	/*_USE_JEMALLOC*/
+
 #ifdef WIN32
 #include <fcntl.h>
 #include <io.h>
