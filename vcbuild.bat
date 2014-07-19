@@ -101,17 +101,6 @@ echo manually install libuv into %~dp0third/libuv.
 exit /b 1
 
 :have_libuv
-goto project-tools-download
-
-:project-tools-download
-if exist third\tcc goto build_libuv
-echo download tinyCC tools.
-if not exist third (mkdir third)
-wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip
-cd third
-7z.exe x tcc.zip
-del tcc.zip
-cd %~dp0
 goto build_libuv
 
 :build_libuv
@@ -119,6 +108,41 @@ cd third/libuv
 call vcbuild.bat %*
 cd ../../
 
+
+@rem Build eastl.
+if exist third\eastl\.git goto have_eastl
+echo git clone https://github.com/paulhodge/EASTL.git third/eastl
+git clone https://github.com/paulhodge/EASTL.git third/eastl
+if errorlevel 1 goto eastl_install_failed
+goto have_eastl
+
+:eastl_install_failed
+echo Failed to download eastl. Make sure you have git installed, or
+echo manually install eastl into %~dp0third/eastl.
+exit /b 1
+
+:have_eastl
+goto build_eastl
+
+:build_eastl
+goto tcc-download
+echo Please manually build eastl in %~dp0third/eastl
+exit /b 1
+
+
+@rem download tcc.
+:tcc-download
+if exist third\tcc goto build_project
+echo download tinyCC tools.
+if not exist third (mkdir third)
+wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip
+cd third
+7z.exe x tcc.zip
+del tcc.zip
+cd %~dp0
+goto build_project
+
+:build_project
 if not defined PYTHON set PYTHON=python
 "%PYTHON%" gyp_stresstest.py -Dtarget_arch=%target_arch% -Dstresstest_library=%library%
 if errorlevel 1 goto create-msvs-files-failed

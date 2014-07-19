@@ -41,6 +41,7 @@ extern struct _main_config main_config;
 struct _main_info
 {
 	CTasks tasks;
+	tcp_task_callback tcp_task_callback;
 	uv_signal_t signal_int;
 	uv_signal_t signal_break;
 	uv_signal_t signal_close;
@@ -49,7 +50,7 @@ struct _main_info
 
 	uv_loop_t * loop;
 
-	CThreadPool threads;
+//	CThreadPool threads;
 
 public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);

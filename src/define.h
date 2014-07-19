@@ -18,36 +18,23 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 * IN THE SOFTWARE.
 */
-#include "commondef.h"
 
-void * operator new(size_t size)
-{
-	return malloc(size);
-}
+#ifndef _DEFINE_H_
+#define _DEFINE_H_
 
-void operator delete(void *p)
-{
-	free(p);
-}
+#define MAX_TASK_COUNT						10
+#define DEAULT_THREAD_NUM					4
+#define DEAULT_TASK_ADD						(MAX_TASK_COUNT/10)
+#define CHECK_DELETE_COUNT					(MAX_TASK_COUNT*DEAULT_THREAD_NUM/10)
 
-void * operator new[](size_t size)
-{
-	return malloc(size);
-}
-
-void operator delete[](void * ptr)
-{
-	free(ptr);
-}
-
+#define TIMEOUT_FOR_RELEASE					(MAX_TASK_COUNT/10000>0? (MAX_TASK_COUNT/10000) : 1)		/*seconds*/
 #ifdef _DEBUG
-void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
-{
-	return malloc(size);
-}
-
-void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
-{
-	return malloc(size);
-}
+#define TIMER_TIME_RELASE					10000
+#define TIMER_TIME_ADD						10
+#else
+#define TIMER_TIME_RELASE					10000
+#define TIMER_TIME_ADD						100
 #endif
+
+
+#endif /* _DEFINE_H_ */

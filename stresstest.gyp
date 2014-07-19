@@ -1,7 +1,7 @@
 {
   'variables': {
     'ss_use_dtrace%': 'false',
-    'ss_jemalloc': 'true',
+    'ss_jemalloc': 'false',
     # ss_parent_path is the relative path to libuv in the parent project
     # this is only relevant when dtrace is enabled and libuv is a child project
     # as it's necessary to correctly locate the object files for post
@@ -40,14 +40,18 @@
 		'third/threadpool',
 		'third/jemalloc/include/jemalloc',
 		'third/jemalloc/include/msvc_compat',
+		'third/EASTL/include',
 	  ],
       'sources': [
         'src/Main.cpp',
         'src/commondef.cpp',
         'src/commondef.h',
+        'src/define.h',
         'src/StressTest.h',
         'src/task.h',
         'src/task.cpp',
+        'src/http_task.cpp',
+        'src/http_task.h',
         'src/threadpool.h',
         'src/threadpool.cpp',
         'third/hash/hash.h',
@@ -75,6 +79,7 @@
 				'VCLinkerTool': {
 				  'AdditionalLibraryDirectories': [
 					'third\\libuv\\$(Configuration)\\lib',
+					'third\\eastl\\lib\\$(Configuration)',
 				  ],
 				  'GenerateDebugInformation': 'true',
 				  'SubSystem': 1,
@@ -88,7 +93,8 @@
 				  '-lpsapi',
 				  '-lshell32',
 				  '-lws2_32',
-				  '-llibuv'
+				  '-llibuv',
+				  '-lEASTL'
 				],
 			  },
         }, { # Not Windows i.e. POSIX

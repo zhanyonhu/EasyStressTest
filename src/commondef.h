@@ -26,6 +26,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+//JEMALLOC
 #ifdef _USE_JEMALLOC
 #undef malloc
 #undef free
@@ -33,6 +34,19 @@
 #define free je_free
 #include "jemalloc.h"
 #endif	/*_USE_JEMALLOC*/
+
+//EASTL
+#ifdef _DEBUG
+#define EASTL_DLL	0
+#else
+#define EASTL_DLL	1
+#define EASTL_API
+#define EASTL_TEMPLATE_API
+#endif
+#define STL			eastl
+#include "EASTL/fixed_hash_map.h"
+#include "EASTL/hash_map.h"
+#include "EASTL/fixed_list.h"
 
 #ifdef WIN32
 #include <fcntl.h>
@@ -60,6 +74,7 @@
 #endif /*WIN32*/
 
 #include "uv.h"
+#include "define.h"
 
 #if defined(_MSC_VER) && _MSC_VER < 1600
 # include "stdint-msvc2008.h"
@@ -219,4 +234,4 @@ do {\
 	}
 
 
-#endif /* TASK_H_ */
+#endif /* _COMMONDEF_H_ */

@@ -17,7 +17,7 @@ static void read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
 	ASSERT(stream != NULL);
 	struct tcp_task * ptask = (struct tcp_task *)stream->data;
-	if (nread < 0) 
+	if (nread <= 0) 
 	{
 		LOGF_TASK_ERR("read_cb error: %s\n", uv_err_name((int)nread));
 		ASSERT(nread == UV_ECONNRESET || nread == UV_EOF);
@@ -27,15 +27,50 @@ static void read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 
 		return;
 	}
+
+	if (main_info.tcp_task_callback.on_recv!=NULL)
+	{
+		main_info.tcp_task_callback.on_recv(ptask, buf, nread);
+	}
 }
 
-static void connect_cb(uv_connect_t* req, int status)
+static void write_cb(uv_write_t* req, int status)
+{
+	struct tcp_task * ptask = (struct tcp_task *)req->data;
+	if (status<=0)
+	{
+		uv_close((uv_handle_t*)&ptask->conn, NULL);
+		return;
+	}
+}
+
+static int do_read(struct tcp_task * ptask)
+{
+	int r = 0;
+	r = uv_read_start((uv_stream_t*)&ptask->conn, alloc_cb, read_cb);
+	ASSERT(r == 0);
+	return r;
+}
+
+static int do_write(struct tcp_task * ptask, const uv_buf_t * bufs, unsigned int nbufs)
+{
+	int r = 0;
+	r = uv_write((uv_write_t *)&ptask->connect_req, (uv_stream_t*)&ptask->conn, bufs, nbufs, write_cb);
+	ASSERT(r == 0);
+}
+
+static void on_connect(uv_connect_t* req, int status)
 {
 	ASSERT(req != NULL);
 
 	struct tcp_task * ptask = (struct tcp_task *)req->data;
 	if (status != 0)
 	{
+		if (main_info.tcp_task_callback.on_connected_failed != NULL)
+		{
+			main_info.tcp_task_callback.on_connected_failed(ptask, status);
+		}
+
 		switch (status)
 		{
 		case UV_ETIMEDOUT:
@@ -62,9 +97,14 @@ static void connect_cb(uv_connect_t* req, int status)
 		return;
 	}
 
-	int r = 0;
-	r = uv_read_start((uv_stream_t*)&ptask->conn, alloc_cb, read_cb);
-	ASSERT(r == 0);
+	if (main_info.tcp_task_callback.on_connected_successful != NULL)
+	{
+		main_info.tcp_task_callback.on_connected_successful(ptask);
+	}
+	else
+	{
+		do_read(ptask);
+	}
 }
 
 static void work_cb(void* req)
@@ -78,7 +118,7 @@ static void work_cb(void* req)
 	r = uv_tcp_connect(&ptask->connect_req,
 		&ptask->conn,
 		(const struct sockaddr*) &ptask->addr,
-		connect_cb);
+		on_connect);
 
 }
 
@@ -93,7 +133,7 @@ static void work_uv_cb(uv_work_t* req)
 	r = uv_tcp_connect(&ptask->connect_req,
 		&ptask->conn,
 		(const struct sockaddr*) &ptask->addr,
-		connect_cb);
+		on_connect);
 
 }
 
@@ -101,13 +141,25 @@ static void after_work_cb(uv_work_t* req, int status)
 {
 }
 
-int tcp_task_post(struct tcp_task * ptask)
+int tcp_task_post(struct tcp_task * pttask)
 {
+	int r = 0;
+	if (main_info.tcp_task_callback.on_init != NULL)
+	{
+		r = main_info.tcp_task_callback.on_init(pttask);
+	}
+
+	if (r<0)
+	{
+		return -1;
+	}
+
+	struct tcp_task * ptask = main_info.tasks.Add(*pttask);
+
 	ptask->work_req.data = ptask;
 	ptask->connect_req.data = ptask;
 	ptask->conn.data = ptask;
 
-	int r = 0;
 	r = uv_queue_work(main_info.loop, &ptask->work_req, work_uv_cb, after_work_cb);
 	ASSERT(r == 0);
 
@@ -118,12 +170,14 @@ int tcp_task_post(struct tcp_task * ptask)
 
 CTasks::CTasks()
 {
+	uv_mutex_init(&to_delete_task_list_mutex);
 	cur_id = 0;
 }
 
 CTasks::~CTasks()
 {
 	Clear();
+	uv_mutex_destroy(&to_delete_task_list_mutex);
 }
 
 void CTasks::Clear()
@@ -131,15 +185,56 @@ void CTasks::Clear()
 	task_list.clear();
 }
 
-struct default_task_node * CTasks::Add(struct default_task_node & task)
+struct tcp_task * CTasks::Add(struct tcp_task & task)
 {
-	std::pair<std::map<unsigned long long int, struct default_task_node>::iterator, bool> piter;
-	piter=task_list.insert(std::make_pair(++cur_id, task));
-	ASSERT(piter.second);
-	if (!piter.second)
+	TASK_PAIR pair;
+	pair = task_list.insert(STL::make_pair(++cur_id, task));
+	ASSERT(pair.second);
+	if (!pair.second)
 	{
 		return NULL;
 	}
 
-	return &piter.first->second;
+	task.id = cur_id;
+	return &pair.first->second;
+}
+
+void CTasks::AddTask_ToBeDeleted(struct tcp_task * ptask)
+{
+	uv_mutex_lock(&to_delete_task_list_mutex);
+	DELETE_NODE node;
+	node.ptask = ptask;
+	node.time_deleted = time(NULL);
+	to_delete_task_list.push_back(node);
+	uv_mutex_unlock(&to_delete_task_list_mutex);
+}
+
+void CTasks::DeleteTask_ToBeDeleted()
+{
+	if (to_delete_task_list.size()>0)
+	{
+		uv_mutex_lock(&to_delete_task_list_mutex);
+		TO_BE_DELETED_TASK_ITER piter;
+		int count = CHECK_DELETE_COUNT;
+		int i = 0;
+		time_t t = time(NULL);
+		for (piter = to_delete_task_list.begin(); piter != to_delete_task_list.end() && i<count; i++)
+		{
+			if (t - piter->time_deleted>TIMEOUT_FOR_RELEASE
+				&& (uv_is_closing((uv_handle_t*)&piter->ptask->conn))
+				&& piter->ptask->conn.reqs_pending == 0
+				&& piter->ptask->conn.activecnt == 0
+				)
+			{
+				task_list.erase(piter->ptask->id);
+				piter = to_delete_task_list.erase(piter);
+			}
+			else
+			{
+				piter++;
+				break;
+			}
+		}
+		uv_mutex_unlock(&to_delete_task_list_mutex);
+	}
 }
