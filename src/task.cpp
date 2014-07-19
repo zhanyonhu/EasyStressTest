@@ -118,12 +118,14 @@ int tcp_task_post(struct tcp_task * ptask)
 
 CTasks::CTasks()
 {
+	uv_mutex_init(&to_delete_task_list_mutex);
 	cur_id = 0;
 }
 
 CTasks::~CTasks()
 {
 	Clear();
+	uv_mutex_destroy(&to_delete_task_list_mutex);
 }
 
 void CTasks::Clear()
@@ -133,13 +135,54 @@ void CTasks::Clear()
 
 struct default_task_node * CTasks::Add(struct default_task_node & task)
 {
-	std::pair<std::map<unsigned long long int, struct default_task_node>::iterator, bool> piter;
-	piter=task_list.insert(std::make_pair(++cur_id, task));
-	ASSERT(piter.second);
-	if (!piter.second)
+	TASK_PAIR pair;
+	pair = task_list.insert(STL::make_pair(++cur_id, task));
+	ASSERT(pair.second);
+	if (!pair.second)
 	{
 		return NULL;
 	}
 
-	return &piter.first->second;
+	task.tcp.id = cur_id;
+	return &pair.first->second;
+}
+
+void CTasks::AddTask_ToBeDeleted(struct tcp_task * ptask)
+{
+	uv_mutex_lock(&to_delete_task_list_mutex);
+	DELETE_NODE node;
+	node.ptask = ptask;
+	node.time_deleted = time(NULL);
+	to_delete_task_list.push_back(node);
+	uv_mutex_unlock(&to_delete_task_list_mutex);
+}
+
+void CTasks::DeleteTask_ToBeDeleted()
+{
+	if (to_delete_task_list.size()>0)
+	{
+		uv_mutex_lock(&to_delete_task_list_mutex);
+		TO_BE_DELETED_TASK_ITER piter;
+		int count = CHECK_DELETE_COUNT;
+		int i = 0;
+		time_t t = time(NULL);
+		for (piter = to_delete_task_list.begin(); piter != to_delete_task_list.end() && i<count; i++)
+		{
+			if (t - piter->time_deleted>TIMEOUT_FOR_RELEASE
+				&& (uv_is_closing((uv_handle_t*)&piter->ptask->conn))
+				&& piter->ptask->conn.reqs_pending == 0
+				&& piter->ptask->conn.activecnt == 0
+				)
+			{
+				task_list.erase(piter->ptask->id);
+				piter = to_delete_task_list.erase(piter);
+			}
+			else
+			{
+				piter++;
+				break;
+			}
+		}
+		uv_mutex_unlock(&to_delete_task_list_mutex);
+	}
 }

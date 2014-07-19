@@ -49,7 +49,7 @@ struct _main_info
 
 	uv_loop_t * loop;
 
-	CThreadPool threads;
+//	CThreadPool threads;
 
 public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);

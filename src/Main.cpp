@@ -22,62 +22,24 @@
 #include "StressTest.h"
 #include <time.h>
 
-#define TIMEOUT_FOR_RELEASE					20		/*seconds*/
-#ifdef _DEBUG
-#define TIMER_TIME_RELASE					10000
-#define TIMER_TIME_ADD						10
-#else
-#define TIMER_TIME_RELASE					10000
-#define TIMER_TIME_ADD						100
-#endif
-
 struct _main_config main_config={
 	false,
 	-1,
-	130000,
-	1000,
-	10
+	MAX_TASK_COUNT,
+	DEAULT_TASK_ADD,
+	DEAULT_THREAD_NUM,
 };
 
 struct _main_info main_info;
 
 void _main_info::AddTask_ToBeDeleted(struct tcp_task * ptask)
 {
-// 	uv_mutex_lock(&to_delete_task_list_mutex);
-// 	time_t t = time(NULL);
-// 	to_delete_task_list.insert(std::make_pair(ptask, t));
-// 	uv_mutex_unlock(&to_delete_task_list_mutex);
+	tasks.AddTask_ToBeDeleted(ptask);
 }
 
 static void timer_release_cb(uv_timer_t *handle)
 {
-// 	if (main_info.to_delete_task_list.size()>0)
-// 	{
-// 		uv_mutex_lock(&main_info.to_delete_task_list_mutex);
-// 		std::map<struct tcp_task *, time_t>::iterator piter;
-// 		int count = main_info.to_delete_task_list.size()/2;
-// 		int i = 0;
-// 		time_t t = time(NULL);
-// 		for (piter = main_info.to_delete_task_list.begin(); piter != main_info.to_delete_task_list.end() && i<count; i++)
-// 		{
-// 			if ((uv_is_closing((uv_handle_t*)&piter->first->conn))
-// 				&& piter->first->conn.reqs_pending == 0
-// 				&& piter->first->conn.activecnt == 0
-// 				&& t - piter->second>TIMEOUT_FOR_RELEASE
-// 				)
-// 			{
-// 				free(piter->first);
-// 				main_info.task_list.erase(piter->first);
-// 				piter = main_info.to_delete_task_list.erase(piter);
-// 			}
-// 			else
-// 			{
-// 				piter++;
-// 				break;
-// 			}
-// 		}
-// 		uv_mutex_unlock(&main_info.to_delete_task_list_mutex);
-// 	}
+	main_info.tasks.DeleteTask_ToBeDeleted();
 }
 
 static void timer_cb(uv_timer_t *handle)
@@ -142,14 +104,14 @@ void init(int argc, char** argv)
 	r = uv_timer_start(&main_info.timer_release, timer_release_cb, TIMER_TIME_RELASE, TIMER_TIME_RELASE);
 	ASSERT(r == 0);
 
-	main_info.threads.SetThreadNumber(main_config.thread_num);
+//	main_info.threads.SetThreadNumber(main_config.thread_num);
 }
 
 void uninit()
 {
 	int r = 0;
 
-	main_info.threads.WaitAll();
+//	main_info.threads.WaitAll();
 
 	close_loop(main_info.loop);
 	r = uv_loop_close(main_info.loop);
