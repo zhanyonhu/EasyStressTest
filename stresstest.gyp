@@ -48,7 +48,6 @@
         'src/StressTest.h',
         'src/task.h',
         'src/task.cpp',
-        'src/itask.h',
         'src/threadpool.h',
         'src/threadpool.cpp',
         'third/hash/hash.h',
