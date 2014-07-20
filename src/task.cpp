@@ -37,14 +37,29 @@ static void read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 static void write_cb(uv_write_t* req, int status)
 {
 	struct tcp_task * ptask = (struct tcp_task *)req->data;
-	if (status<=0)
+	if (status!=0)
 	{
+		LOGF_TASK_ERR("write_cb error: %s\n", uv_err_name((int)status));
+		ASSERT(status == UV_ECONNRESET || status == UV_EOF);
+
+		if (main_info.tcp_task_callback.on_send_error != NULL)
+		{
+			main_info.tcp_task_callback.on_send_error(ptask, status);
+		}
+
 		uv_close((uv_handle_t*)&ptask->conn, NULL);
+		main_info.AddTask_ToBeDeleted(ptask);
+
 		return;
+	}
+
+	if (main_info.tcp_task_callback.on_send_ok != NULL)
+	{
+		main_info.tcp_task_callback.on_send_ok(ptask);
 	}
 }
 
-static int do_read(struct tcp_task * ptask)
+int do_read(struct tcp_task * ptask)
 {
 	int r = 0;
 	r = uv_read_start((uv_stream_t*)&ptask->conn, alloc_cb, read_cb);
@@ -52,11 +67,12 @@ static int do_read(struct tcp_task * ptask)
 	return r;
 }
 
-static int do_write(struct tcp_task * ptask, const uv_buf_t * bufs, unsigned int nbufs)
+int do_write(struct tcp_task * ptask, const uv_buf_t * bufs, unsigned int nbufs)
 {
 	int r = 0;
 	r = uv_write((uv_write_t *)&ptask->connect_req, (uv_stream_t*)&ptask->conn, bufs, nbufs, write_cb);
 	ASSERT(r == 0);
+	return r;
 }
 
 static void on_connect(uv_connect_t* req, int status)

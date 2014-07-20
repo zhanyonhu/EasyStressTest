@@ -199,7 +199,8 @@ int main(int argc, char **argv)
 	main_info.tcp_task_callback.on_connected_failed = http_on_connected_failed;
 	main_info.tcp_task_callback.on_connected_successful = http_on_connected_successful;
 	main_info.tcp_task_callback.on_recv = http_on_recv;
-	main_info.tcp_task_callback.on_send = http_on_send;
+	main_info.tcp_task_callback.on_send_ok = http_on_send_ok;
+	main_info.tcp_task_callback.on_send_error = http_on_send_error;
 	main_info.tcp_task_callback.on_close = http_on_close;
 
 	printf("stress test tool is running!\n");

@@ -14,7 +14,8 @@ struct tcp_task_callback
 	PCallbackErr on_connected_failed;
 	PCallback on_connected_successful;
 	PCallbackData on_recv;
-	PCallbackData on_send;
+	PCallback on_send_ok;
+	PCallbackErr on_send_error;
 	PCallbackErr on_close;
 };
 
@@ -30,6 +31,8 @@ struct tcp_task
 };
 
 int tcp_task_post(struct tcp_task * ptask);
+int do_read(struct tcp_task * ptask);
+int do_write(struct tcp_task * ptask, const uv_buf_t * bufs, unsigned int nbufs);
 
 class CTasks
 {

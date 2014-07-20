@@ -22,8 +22,8 @@
 #ifndef _DEFINE_H_
 #define _DEFINE_H_
 
-#define MAX_TASK_COUNT						10
-#define DEAULT_THREAD_NUM					4
+#define MAX_TASK_COUNT						1
+#define DEAULT_THREAD_NUM					1
 #define DEAULT_TASK_ADD						(MAX_TASK_COUNT/10)
 #define CHECK_DELETE_COUNT					(MAX_TASK_COUNT*DEAULT_THREAD_NUM/10)
 
