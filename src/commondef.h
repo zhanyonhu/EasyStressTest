@@ -22,6 +22,11 @@
 #ifndef _COMMONDEF_H_
 #define _COMMONDEF_H_
 
+extern "C"
+{
+#include "libtcc.h"
+};
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>

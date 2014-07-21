@@ -15,6 +15,9 @@ How To Build It ?
 		Run the "vcbuild.bat" file to build it. 
 	
 		Otherwise, you can also download or copy the libuv/tcc to the folder "third\libuv" / "third\tcc". Then, run the "vcbuild.bat". --This will save a lot of time for you.
+
+	(c) Run
+		Add third/tcc to "PATH" environment.
 	
 2. Linux	
 	(a) Prepare

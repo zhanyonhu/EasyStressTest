@@ -134,14 +134,28 @@ exit /b 1
 
 @rem download tcc.
 :tcc-download
-if exist third\tcc goto build_project
+if exist third\tcc goto tcc-build
 echo download tinyCC tools.
 if not exist third (mkdir third)
-wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip
+if "%target_arch%"=="x64" (
+echo wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win64-bin.zip" -Othird\tcc.zip 
+wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win64-bin.zip" -Othird\tcc.zip 
+)else  (
+echo wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip 
+wget "http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.26-win32-bin.zip" -Othird\tcc.zip 
+)
 cd third
 7z.exe x tcc.zip
 del tcc.zip
-cd %~dp0
+cd ../
+goto tcc-build
+
+:tcc-build
+if exist third\tcc\libtcc.lib goto build_project
+echo build tcc
+cd third\tcc
+lib /def:libtcc\libtcc.def /out:libtcc.lib
+cd ../../
 goto build_project
 
 :build_project
@@ -192,6 +206,12 @@ if exist third/libuv (
 		git pull origin master
 		cd ../../
 	)
+	cd ../../
+)
+if exist third/eastl (
+	cd third/eastl 
+	echo 'git pull eastl'
+	git pull origin master
 	cd ../../
 )
 goto exit

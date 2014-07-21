@@ -29,18 +29,26 @@
 
 struct _main_config
 {
-	bool flood_begin;				//flood begin (The initial rapid filling)
+	bool flood_begin;						//flood begin (The initial rapid filling)
 	unsigned int task_count;				//execute times
 	unsigned int task_min_running;			//minimize running at the same time
 	unsigned int task_add_once;				//When the running instance count less than a certain value <task_min_running> , 
 											//automatically increase the number of running instance
 	unsigned int thread_num;				//task thread number
+	STL::string script_file;
+	STL::string libpath;
 };
 extern struct _main_config main_config;
+
+struct TCC 
+{
+	TCCState * tcc;
+};
 
 struct _main_info
 {
 	CTasks tasks;
+	TCC tcc;
 	tcp_task_callback tcp_task_callback;
 	uv_signal_t signal_int;
 	uv_signal_t signal_break;
@@ -56,6 +64,8 @@ public:
 	void AddTask_ToBeDeleted(struct tcp_task * ptask);
 	_main_info()
 	{
+		ZeroMemory(&tcc, sizeof(tcc));
+		ZeroMemory(&tcp_task_callback, sizeof(tcp_task_callback));
 	}
 	~_main_info()
 	{
@@ -69,7 +79,7 @@ void show_help();
 /* Do platform-specific initialization. */
 void platform_init(int argc, char** argv);
 void platform_exit();
-void init(int argc, char** argv);
+int init(int argc, char** argv);
 void uninit();
 
 

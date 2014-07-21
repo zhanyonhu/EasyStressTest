@@ -72,7 +72,7 @@ void signal_unexpected_cb(uv_signal_t* handle, int signum)
 	}
 }
 
-void init(int argc, char** argv)
+int init(int argc, char** argv)
 {
 	main_info.loop = uv_default_loop();
 
@@ -103,6 +103,41 @@ void init(int argc, char** argv)
 	ASSERT(r == 0);
 
 //	main_info.threads.SetThreadNumber(main_config.thread_num);
+
+	if (main_config.script_file.empty() ||
+		main_config.libpath.empty())
+	{
+		main_info.tcp_task_callback.on_init = http_on_init;
+		main_info.tcp_task_callback.on_connected_failed = http_on_connected_failed;
+		main_info.tcp_task_callback.on_connected_successful = http_on_connected_successful;
+		main_info.tcp_task_callback.on_recv = http_on_recv;
+		main_info.tcp_task_callback.on_send_ok = http_on_send_ok;
+		main_info.tcp_task_callback.on_send_error = http_on_send_error;
+		main_info.tcp_task_callback.on_close = http_on_close;
+	}
+	else
+	{
+		TCCState * tcc = tcc_new();
+		main_info.tcc.tcc = tcc;
+		ASSERT(tcc != NULL);
+		tcc_set_output_type(tcc, TCC_OUTPUT_MEMORY);
+		if (tcc_add_file(tcc, main_config.script_file.c_str()) == -1)
+		{
+			printf("\nCannot add script file = %s", main_config.script_file.c_str());
+			return -1;
+		}
+
+		tcc_add_include_path(tcc, "E:\\ProjectTemp\\EasyStressTest\\third\\tcc");
+		tcc_set_lib_path(tcc, "E:\\ProjectTemp\\EasyStressTest\\third\\tcc");
+
+		if (tcc_relocate(tcc, TCC_RELOCATE_AUTO) < 0)
+		{
+			printf("\nCannot relocate script file = %s", main_config.script_file.c_str());
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 void uninit()
@@ -122,12 +157,14 @@ void uninit()
 	ASSERT(r == 0);
 
 	main_info.tasks.Clear();
-
+	tcc_delete(main_info.tcc.tcc);
+	main_info.tcc.tcc = NULL;
 }
 
 int main(int argc, char **argv)
 {
 	const char * pargv = NULL;
+	int r = 0;
 
 	for (int arg_i = 0; arg_i < argc; arg_i++)
 	{
@@ -171,6 +208,14 @@ int main(int argc, char **argv)
 		{
 			main_config.flood_begin = true;
 		}
+		else if ((pargv = strstr(argv[arg_i], "-tcc=")) != NULL)
+		{
+			main_config.script_file = pargv + strlen("-tcc=");
+		}
+		else if ((pargv = strstr(argv[arg_i], "-libpath=")) != NULL)
+		{
+			main_config.libpath = pargv + strlen("-libpath=");
+		}
 		else if (stricmp(argv[arg_i], "-help") == 0 ||
 			stricmp(argv[arg_i], "/help") == 0 ||
 			stricmp(argv[arg_i], "help") == 0)
@@ -195,28 +240,31 @@ int main(int argc, char **argv)
 		main_config.thread_num = 3;
 	}
 
-	main_info.tcp_task_callback.on_init = http_on_init;
-	main_info.tcp_task_callback.on_connected_failed = http_on_connected_failed;
-	main_info.tcp_task_callback.on_connected_successful = http_on_connected_successful;
-	main_info.tcp_task_callback.on_recv = http_on_recv;
-	main_info.tcp_task_callback.on_send_ok = http_on_send_ok;
-	main_info.tcp_task_callback.on_send_error = http_on_send_error;
-	main_info.tcp_task_callback.on_close = http_on_close;
-
 	printf("stress test tool is running!\n");
 	printf("taskcount=%d\n", main_config.task_count);
 	printf("task_min_running=%d\n", main_config.task_min_running);
 	printf("task_add_once=%d\n", main_config.task_add_once);
 
 	platform_init(argc, argv);
-	init(argc, argv);
+	if (init(argc, argv) < 0)
+	{
+		goto end;
+	}
 
-	int r = 0;
+	if (main_config.flood_begin)
+	{
+		if (main_info.tasks.Count() < main_config.task_min_running)
+		{
+			timer_cb(NULL);
+		}
+	}
 
 	r = uv_run(main_info.loop, UV_RUN_DEFAULT);
 
 	printf("\n\nFinished!");
 	printf("\nPress any key to continue ......");
+
+end:
 	getchar();
 
 	uninit();
@@ -245,7 +293,6 @@ void platform_init(int argc, char **argv)
 	/* Disable stdio output buffering. */
 	setvbuf(stdout, NULL, _IONBF, 0);
 	setvbuf(stderr, NULL, _IONBF, 0);
-
 }
 
 void platform_exit()
@@ -275,6 +322,8 @@ void show_help()
 	printf("-task_min_running=***\t\t-mc: minimize running at the same time\n");
 	printf("-task_add_once=***\t\t-ac: When the running instance count less than a certain value <task_min_running> , automatically increase the number of running instance\n");
 	printf("-thread=***\t\t-tn: task thread number\n");
+	printf("-tcc==***\t\t: tcc script file path\n");
+	printf("-libpath==***\t\t: tcc's libtcc1.a file path\n");
 	printf("\n\nPress any key to continue ......");
 	getchar();
 }

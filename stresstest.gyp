@@ -41,6 +41,7 @@
 		'third/jemalloc/include/jemalloc',
 		'third/jemalloc/include/msvc_compat',
 		'third/EASTL/include',
+		'third/tcc/libtcc',
 	  ],
       'sources': [
         'src/Main.cpp',
@@ -80,6 +81,7 @@
 				  'AdditionalLibraryDirectories': [
 					'third\\libuv\\$(Configuration)\\lib',
 					'third\\eastl\\lib\\$(Configuration)',
+					'third\\tcc\\',
 				  ],
 				  'GenerateDebugInformation': 'true',
 				  'SubSystem': 1,
@@ -94,7 +96,8 @@
 				  '-lshell32',
 				  '-lws2_32',
 				  '-llibuv',
-				  '-lEASTL'
+				  '-lEASTL',
+				  '-llibtcc'
 				],
 			  },
         }, { # Not Windows i.e. POSIX
