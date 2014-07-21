@@ -13,17 +13,33 @@ static void alloc_cb(uv_handle_t* handle,
 	ASSERT(buf->base != NULL);
 }
 
+static void close_cb(uv_handle_t* handle)
+{
+	struct tcp_task * ptask = (struct tcp_task *)handle->data;
+	main_info.AddTask_ToBeDeleted(ptask);
+
+	if (main_info.tcp_task_callback.on_close != NULL)
+	{
+		main_info.tcp_task_callback.on_close(ptask);
+	}
+}
+
 static void read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
+	if (nread == 0)
+	{
+		//WSAEWOULDBLOCK
+		return;
+	}
+
 	ASSERT(stream != NULL);
 	struct tcp_task * ptask = (struct tcp_task *)stream->data;
-	if (nread <= 0) 
+	if (nread < 0) 
 	{
 		LOGF_TASK_ERR("read_cb error: %s\n", uv_err_name((int)nread));
 		ASSERT(nread == UV_ECONNRESET || nread == UV_EOF);
 
-		uv_close((uv_handle_t*)&ptask->conn, NULL);
-		main_info.AddTask_ToBeDeleted(ptask);
+		uv_close((uv_handle_t*)&ptask->conn, close_cb);
 
 		return;
 	}
@@ -47,8 +63,7 @@ static void write_cb(uv_write_t* req, int status)
 			main_info.tcp_task_callback.on_send_error(ptask, status);
 		}
 
-		uv_close((uv_handle_t*)&ptask->conn, NULL);
-		main_info.AddTask_ToBeDeleted(ptask);
+		uv_close((uv_handle_t*)&ptask->conn, close_cb);
 
 		return;
 	}
@@ -57,6 +72,14 @@ static void write_cb(uv_write_t* req, int status)
 	{
 		main_info.tcp_task_callback.on_send_ok(ptask);
 	}
+}
+
+int do_close(struct tcp_task * ptask, bool release_it/* = false*/)
+{
+	uv_read_stop((uv_stream_t*)&ptask->conn);
+	uv_close((uv_handle_t*)&ptask->conn, close_cb);
+	ptask->delete_immediately = release_it;
+	return 0;
 }
 
 int do_read(struct tcp_task * ptask)
@@ -211,7 +234,7 @@ struct tcp_task * CTasks::Add(struct tcp_task & task)
 		return NULL;
 	}
 
-	task.id = cur_id;
+	pair.first->second.id = cur_id;
 	return &pair.first->second;
 }
 
@@ -236,7 +259,7 @@ void CTasks::DeleteTask_ToBeDeleted()
 		time_t t = time(NULL);
 		for (piter = to_delete_task_list.begin(); piter != to_delete_task_list.end() && i<count; i++)
 		{
-			if (t - piter->time_deleted>TIMEOUT_FOR_RELEASE
+			if ((piter->ptask->delete_immediately || t - piter->time_deleted>TIMEOUT_FOR_RELEASE)
 				&& (uv_is_closing((uv_handle_t*)&piter->ptask->conn))
 				&& piter->ptask->conn.reqs_pending == 0
 				&& piter->ptask->conn.activecnt == 0

@@ -16,7 +16,7 @@ struct tcp_task_callback
 	PCallbackData on_recv;
 	PCallback on_send_ok;
 	PCallbackErr on_send_error;
-	PCallbackErr on_close;
+	PCallback on_close;
 };
 
 struct tcp_task 
@@ -26,6 +26,7 @@ struct tcp_task
 	uv_work_t work_req;
 	uint64_t id;
 	struct sockaddr_in addr;
+	bool delete_immediately;
 	char read_buf[1024];
 	char reversed[512];
 };
@@ -33,6 +34,7 @@ struct tcp_task
 int tcp_task_post(struct tcp_task * ptask);
 int do_read(struct tcp_task * ptask);
 int do_write(struct tcp_task * ptask, const uv_buf_t * bufs, unsigned int nbufs);
+int do_close(struct tcp_task * ptask, bool release_it=false);
 
 class CTasks
 {
