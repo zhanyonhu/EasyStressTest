@@ -114,6 +114,7 @@ if exist third\eastl\.git goto have_eastl
 echo git clone https://github.com/paulhodge/EASTL.git third/eastl
 git clone https://github.com/paulhodge/EASTL.git third/eastl
 if errorlevel 1 goto eastl_install_failed
+type CMakeBuild.patch >> third/eastl/CMakeLists.txt
 goto have_eastl
 
 :eastl_install_failed
@@ -125,8 +126,9 @@ exit /b 1
 goto build_eastl
 
 :build_eastl
-goto tcc-download
-echo Please manually build eastl in %~dp0third/eastl
+if exist third\eastl\lib goto tcc-download
+echo ==========================================
+echo Please manually build eastl in %~dp0third/eastl, use cmake tools.
 exit /b 1
 
 

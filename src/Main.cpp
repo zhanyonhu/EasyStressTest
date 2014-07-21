@@ -20,6 +20,7 @@
  */
 
 #include "StressTest.h"
+#include "http_task.h"
 #include <time.h>
 
 struct _main_config main_config={
@@ -52,12 +53,9 @@ static void timer_cb(uv_timer_t *handle)
 		//add tasks
 		for (unsigned int i = 0; i < main_config.task_add_once; i++)
 		{
-			struct default_task_node task = {0};
-			r = uv_ip4_addr("1.1.1.1", 80, &task.tcp.addr);
-			ASSERT(r == 0);
-			struct default_task_node * ptask = main_info.tasks.Add(task);
-			r = tcp_task_post(&ptask->tcp);
-			ASSERT(r == 0);
+			struct tcp_task task = {0};
+			r = tcp_task_post(&task);
+			ASSERT(r >= 0);
 		}
 	}
 }
@@ -196,6 +194,14 @@ int main(int argc, char **argv)
 	{
 		main_config.thread_num = 3;
 	}
+
+	main_info.tcp_task_callback.on_init = http_on_init;
+	main_info.tcp_task_callback.on_connected_failed = http_on_connected_failed;
+	main_info.tcp_task_callback.on_connected_successful = http_on_connected_successful;
+	main_info.tcp_task_callback.on_recv = http_on_recv;
+	main_info.tcp_task_callback.on_send_ok = http_on_send_ok;
+	main_info.tcp_task_callback.on_send_error = http_on_send_error;
+	main_info.tcp_task_callback.on_close = http_on_close;
 
 	printf("stress test tool is running!\n");
 	printf("taskcount=%d\n", main_config.task_count);

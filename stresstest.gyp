@@ -50,6 +50,8 @@
         'src/StressTest.h',
         'src/task.h',
         'src/task.cpp',
+        'src/http_task.cpp',
+        'src/http_task.h',
         'src/threadpool.h',
         'src/threadpool.cpp',
         'third/hash/hash.h',

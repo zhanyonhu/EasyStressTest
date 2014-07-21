@@ -17,7 +17,7 @@ static void read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
 	ASSERT(stream != NULL);
 	struct tcp_task * ptask = (struct tcp_task *)stream->data;
-	if (nread < 0) 
+	if (nread <= 0) 
 	{
 		LOGF_TASK_ERR("read_cb error: %s\n", uv_err_name((int)nread));
 		ASSERT(nread == UV_ECONNRESET || nread == UV_EOF);
@@ -27,15 +27,66 @@ static void read_cb(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 
 		return;
 	}
+
+	if (main_info.tcp_task_callback.on_recv!=NULL)
+	{
+		main_info.tcp_task_callback.on_recv(ptask, buf, nread);
+	}
 }
 
-static void connect_cb(uv_connect_t* req, int status)
+static void write_cb(uv_write_t* req, int status)
+{
+	struct tcp_task * ptask = (struct tcp_task *)req->data;
+	if (status!=0)
+	{
+		LOGF_TASK_ERR("write_cb error: %s\n", uv_err_name((int)status));
+		ASSERT(status == UV_ECONNRESET || status == UV_EOF);
+
+		if (main_info.tcp_task_callback.on_send_error != NULL)
+		{
+			main_info.tcp_task_callback.on_send_error(ptask, status);
+		}
+
+		uv_close((uv_handle_t*)&ptask->conn, NULL);
+		main_info.AddTask_ToBeDeleted(ptask);
+
+		return;
+	}
+
+	if (main_info.tcp_task_callback.on_send_ok != NULL)
+	{
+		main_info.tcp_task_callback.on_send_ok(ptask);
+	}
+}
+
+int do_read(struct tcp_task * ptask)
+{
+	int r = 0;
+	r = uv_read_start((uv_stream_t*)&ptask->conn, alloc_cb, read_cb);
+	ASSERT(r == 0);
+	return r;
+}
+
+int do_write(struct tcp_task * ptask, const uv_buf_t * bufs, unsigned int nbufs)
+{
+	int r = 0;
+	r = uv_write((uv_write_t *)&ptask->connect_req, (uv_stream_t*)&ptask->conn, bufs, nbufs, write_cb);
+	ASSERT(r == 0);
+	return r;
+}
+
+static void on_connect(uv_connect_t* req, int status)
 {
 	ASSERT(req != NULL);
 
 	struct tcp_task * ptask = (struct tcp_task *)req->data;
 	if (status != 0)
 	{
+		if (main_info.tcp_task_callback.on_connected_failed != NULL)
+		{
+			main_info.tcp_task_callback.on_connected_failed(ptask, status);
+		}
+
 		switch (status)
 		{
 		case UV_ETIMEDOUT:
@@ -62,9 +113,14 @@ static void connect_cb(uv_connect_t* req, int status)
 		return;
 	}
 
-	int r = 0;
-	r = uv_read_start((uv_stream_t*)&ptask->conn, alloc_cb, read_cb);
-	ASSERT(r == 0);
+	if (main_info.tcp_task_callback.on_connected_successful != NULL)
+	{
+		main_info.tcp_task_callback.on_connected_successful(ptask);
+	}
+	else
+	{
+		do_read(ptask);
+	}
 }
 
 static void work_cb(void* req)
@@ -78,7 +134,7 @@ static void work_cb(void* req)
 	r = uv_tcp_connect(&ptask->connect_req,
 		&ptask->conn,
 		(const struct sockaddr*) &ptask->addr,
-		connect_cb);
+		on_connect);
 
 }
 
@@ -93,7 +149,7 @@ static void work_uv_cb(uv_work_t* req)
 	r = uv_tcp_connect(&ptask->connect_req,
 		&ptask->conn,
 		(const struct sockaddr*) &ptask->addr,
-		connect_cb);
+		on_connect);
 
 }
 
@@ -101,13 +157,25 @@ static void after_work_cb(uv_work_t* req, int status)
 {
 }
 
-int tcp_task_post(struct tcp_task * ptask)
+int tcp_task_post(struct tcp_task * pttask)
 {
+	int r = 0;
+	if (main_info.tcp_task_callback.on_init != NULL)
+	{
+		r = main_info.tcp_task_callback.on_init(pttask);
+	}
+
+	if (r<0)
+	{
+		return -1;
+	}
+
+	struct tcp_task * ptask = main_info.tasks.Add(*pttask);
+
 	ptask->work_req.data = ptask;
 	ptask->connect_req.data = ptask;
 	ptask->conn.data = ptask;
 
-	int r = 0;
 	r = uv_queue_work(main_info.loop, &ptask->work_req, work_uv_cb, after_work_cb);
 	ASSERT(r == 0);
 
@@ -133,7 +201,7 @@ void CTasks::Clear()
 	task_list.clear();
 }
 
-struct default_task_node * CTasks::Add(struct default_task_node & task)
+struct tcp_task * CTasks::Add(struct tcp_task & task)
 {
 	TASK_PAIR pair;
 	pair = task_list.insert(STL::make_pair(++cur_id, task));
@@ -143,7 +211,7 @@ struct default_task_node * CTasks::Add(struct default_task_node & task)
 		return NULL;
 	}
 
-	task.tcp.id = cur_id;
+	task.id = cur_id;
 	return &pair.first->second;
 }
 
